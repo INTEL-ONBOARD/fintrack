@@ -4,18 +4,22 @@ import SwiftUI
 @main
 struct FinTrackApp: App {
     @StateObject private var store = FinanceStore()
+    @StateObject private var auth = AuthSession()
 
     var body: some Scene {
         WindowGroup {
             FinTrackRootView()
                 .environmentObject(store)
+                .environmentObject(auth)
                 .tint(FinTrackStyle.purple)
+                .task { await auth.restore() }
         }
     }
 }
 
 private struct FinTrackRootView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
     @AppStorage("biometricLockEnabled") private var deviceLockEnabled = false
@@ -25,6 +29,7 @@ private struct FinTrackRootView: View {
     @State private var reviewWarning: String?
     @State private var pendingShortcut: PendingShortcutDraft?
     @State private var linkMessage: String?
+    @State private var showingAuth = false
 
     var body: some View {
         Group {
@@ -50,9 +55,13 @@ private struct FinTrackRootView: View {
             if deviceLockEnabled { isLocked = true; await unlock() }
         }
         .onOpenURL(perform: handleShortcutURL)
+        .onChange(of: auth.isAuthenticated) { _, authenticated in
+            if authenticated { hasSeenWelcome = true }
+        }
         .onChange(of: isLocked) { _, locked in
             if !locked { presentPendingShortcutIfReady() }
         }
+        .sheet(isPresented: $showingAuth) { AuthView() }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: reviewWarning)
         }
@@ -78,13 +87,16 @@ private struct FinTrackRootView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 32)
             Spacer()
-            Button("Get Started") {
+            Button("Sign in to sync") {
+                showingAuth = true
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .padding(.horizontal, 24)
+            Button("Continue offline") {
                 hasSeenWelcome = true
                 presentPendingShortcutIfReady()
             }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, 24)
-                .padding(.bottom, 30)
+            .padding(.bottom, 30)
         }
         .background(FinTrackStyle.background)
     }
