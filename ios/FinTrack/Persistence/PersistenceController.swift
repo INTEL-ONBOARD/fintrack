@@ -36,6 +36,42 @@ final class BudgetEntity: NSManagedObject {
     @NSManaged var currency: String
 }
 
+@objc(AccountEntity)
+final class AccountEntity: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var serverID: String?
+    @NSManaged var name: String
+    @NSManaged var type: String
+    @NSManaged var balanceMinor: Int64
+    @NSManaged var limitMinor: Int64
+    @NSManaged var color: String
+    @NSManaged var bank: String
+}
+
+@objc(GoalEntity)
+final class GoalEntity: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var serverID: String?
+    @NSManaged var name: String
+    @NSManaged var icon: String
+    @NSManaged var targetMinor: Int64
+    @NSManaged var currentMinor: Int64
+    @NSManaged var color: String
+    @NSManaged var deadline: String
+}
+
+@objc(BillEntity)
+final class BillEntity: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var serverID: String?
+    @NSManaged var name: String
+    @NSManaged var amountMinor: Int64
+    @NSManaged var dueDay: Int64
+    @NSManaged var category: String
+    @NSManaged var color: String
+    @NSManaged var paid: Bool
+}
+
 final class PersistenceController {
     static let shared = PersistenceController()
 
@@ -43,7 +79,10 @@ final class PersistenceController {
 
     init(inMemory: Bool = false) {
         let model = NSManagedObjectModel()
-        model.entities = [Self.transactionEntity(), Self.categoryEntity(), Self.budgetEntity()]
+        model.entities = [
+            Self.transactionEntity(), Self.categoryEntity(), Self.budgetEntity(),
+            Self.accountEntity(), Self.goalEntity(), Self.billEntity()
+        ]
         container = NSPersistentContainer(name: "FinTrack", managedObjectModel: model)
         if inMemory {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
@@ -53,6 +92,8 @@ final class PersistenceController {
                 forKey: NSPersistentStoreFileProtectionKey
             )
         }
+        container.persistentStoreDescriptions.first?.shouldMigrateStoreAutomatically = true
+        container.persistentStoreDescriptions.first?.shouldInferMappingModelAutomatically = true
         var loadError: Error?
         container.loadPersistentStores { _, error in loadError = error }
         if let loadError { fatalError("Unable to load local finance data: \(loadError)") }
@@ -114,6 +155,45 @@ final class PersistenceController {
             attribute("categoryID", .UUIDAttributeType, optional: true),
             attribute("amountMinor", .integer64AttributeType),
             attribute("currency", .stringAttributeType)
+        ])
+    }
+
+    private static func accountEntity() -> NSEntityDescription {
+        entity("Account", className: NSStringFromClass(AccountEntity.self), attributes: [
+            attribute("id", .UUIDAttributeType),
+            attribute("serverID", .stringAttributeType, optional: true),
+            attribute("name", .stringAttributeType),
+            attribute("type", .stringAttributeType),
+            attribute("balanceMinor", .integer64AttributeType),
+            attribute("limitMinor", .integer64AttributeType),
+            attribute("color", .stringAttributeType),
+            attribute("bank", .stringAttributeType)
+        ])
+    }
+
+    private static func goalEntity() -> NSEntityDescription {
+        entity("Goal", className: NSStringFromClass(GoalEntity.self), attributes: [
+            attribute("id", .UUIDAttributeType),
+            attribute("serverID", .stringAttributeType, optional: true),
+            attribute("name", .stringAttributeType),
+            attribute("icon", .stringAttributeType),
+            attribute("targetMinor", .integer64AttributeType),
+            attribute("currentMinor", .integer64AttributeType),
+            attribute("color", .stringAttributeType),
+            attribute("deadline", .stringAttributeType)
+        ])
+    }
+
+    private static func billEntity() -> NSEntityDescription {
+        entity("Bill", className: NSStringFromClass(BillEntity.self), attributes: [
+            attribute("id", .UUIDAttributeType),
+            attribute("serverID", .stringAttributeType, optional: true),
+            attribute("name", .stringAttributeType),
+            attribute("amountMinor", .integer64AttributeType),
+            attribute("dueDay", .integer64AttributeType),
+            attribute("category", .stringAttributeType),
+            attribute("color", .stringAttributeType),
+            attribute("paid", .booleanAttributeType)
         ])
     }
 }

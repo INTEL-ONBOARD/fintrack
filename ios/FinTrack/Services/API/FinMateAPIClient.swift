@@ -105,6 +105,73 @@ struct FinMateAPIClient {
         )
     }
 
+    func listAccounts(accessToken: String, limit: Int = 100, skip: Int = 0) async throws -> [RemoteAccount] {
+        try await send(path: "/api/accounts", method: "GET", queryItems: [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "skip", value: String(skip))
+        ], accessToken: accessToken)
+    }
+
+    func createAccount(_ account: FinanceAccount, accessToken: String) async throws -> RemoteAccount {
+        let body = try JSONEncoder().encode(RemoteAccountRequest(account: account))
+        return try await send(path: "/api/accounts", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func updateAccount(id: String, _ account: FinanceAccount, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(RemoteAccountRequest(account: account))
+        let _: APIStatusResponse = try await send(path: "/api/accounts/\(id)", method: "PATCH", body: body, accessToken: accessToken)
+    }
+
+    func deleteAccount(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/accounts/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
+    func listGoals(accessToken: String, limit: Int = 100, skip: Int = 0) async throws -> [RemoteGoal] {
+        try await send(path: "/api/goals", method: "GET", queryItems: [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "skip", value: String(skip))
+        ], accessToken: accessToken)
+    }
+
+    func createGoal(_ goal: FinanceGoal, accessToken: String) async throws -> RemoteGoal {
+        let body = try JSONEncoder().encode(RemoteGoalRequest(goal: goal))
+        return try await send(path: "/api/goals", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func updateGoal(id: String, _ goal: FinanceGoal, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(RemoteGoalRequest(goal: goal))
+        let _: APIStatusResponse = try await send(path: "/api/goals/\(id)", method: "PATCH", body: body, accessToken: accessToken)
+    }
+
+    func deleteGoal(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/goals/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
+    func listBills(accessToken: String, limit: Int = 100, skip: Int = 0) async throws -> [RemoteBill] {
+        try await send(path: "/api/bills", method: "GET", queryItems: [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "skip", value: String(skip))
+        ], accessToken: accessToken)
+    }
+
+    func createBill(_ bill: FinanceBill, accessToken: String) async throws -> RemoteBill {
+        let body = try JSONEncoder().encode(RemoteBillRequest(bill: bill))
+        return try await send(path: "/api/bills", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func updateBill(id: String, _ bill: FinanceBill, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(RemoteBillRequest(bill: bill))
+        let _: APIStatusResponse = try await send(path: "/api/bills/\(id)", method: "PATCH", body: body, accessToken: accessToken)
+    }
+
+    func deleteBill(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/bills/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
+    func toggleBillPaid(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/bills/\(id)/toggle-paid", method: "POST", accessToken: accessToken)
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
@@ -230,6 +297,90 @@ struct RemoteTransactionRequest: Encodable {
 
 struct APIStatusResponse: Decodable {
     let ok: Bool
+}
+
+struct RemoteAccount: Decodable {
+    let id: String
+    let name: String?
+    let type: String?
+    let balance: Double?
+    let limit: Double?
+    let color: String?
+    let bank: String?
+}
+
+struct RemoteGoal: Decodable {
+    let id: String
+    let name: String?
+    let icon: String?
+    let target: Double?
+    let current: Double?
+    let color: String?
+    let deadline: String?
+}
+
+struct RemoteBill: Decodable {
+    let id: String
+    let name: String?
+    let amount: Double?
+    let dueDay: Int?
+    let category: String?
+    let color: String?
+    let paid: Bool?
+}
+
+struct RemoteAccountRequest: Encodable {
+    let name: String
+    let type: String
+    let balance: Double
+    let limit: Double
+    let color: String
+    let bank: String
+
+    init(account: FinanceAccount) {
+        name = account.name
+        type = account.type.rawValue
+        balance = Double(account.balanceMinor) / 100
+        limit = Double(account.limitMinor) / 100
+        color = account.color
+        bank = account.bank
+    }
+}
+
+struct RemoteGoalRequest: Encodable {
+    let name: String
+    let icon: String
+    let target: Double
+    let current: Double
+    let color: String
+    let deadline: String
+
+    init(goal: FinanceGoal) {
+        name = goal.name
+        icon = goal.icon
+        target = Double(goal.targetMinor) / 100
+        current = Double(goal.currentMinor) / 100
+        color = goal.color
+        deadline = goal.deadline
+    }
+}
+
+struct RemoteBillRequest: Encodable {
+    let name: String
+    let amount: Double
+    let dueDay: Int
+    let category: String
+    let color: String
+    let paid: Bool
+
+    init(bill: FinanceBill) {
+        name = bill.name
+        amount = Double(bill.amountMinor) / 100
+        dueDay = bill.dueDay
+        category = bill.category
+        color = bill.color
+        paid = bill.paid
+    }
 }
 
 struct APIErrorResponse: Decodable {

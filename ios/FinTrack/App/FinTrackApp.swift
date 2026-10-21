@@ -57,6 +57,7 @@ private struct FinTrackRootView: View {
         .task(id: auth.isAuthenticated) {
             guard auth.isAuthenticated, let token = auth.token() else { return }
             await store.syncTransactions(accessToken: token)
+            await store.syncResources(accessToken: token)
         }
         .onOpenURL(perform: handleShortcutURL)
         .onChange(of: auth.isAuthenticated) { _, authenticated in

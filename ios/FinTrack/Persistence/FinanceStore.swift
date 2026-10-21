@@ -28,11 +28,21 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var transactions: [FinanceTransaction] = []
     @Published private(set) var categories: [FinanceCategory] = []
     @Published private(set) var budgets: [FinanceBudget] = []
+    @Published private(set) var accounts: [FinanceAccount] = []
+    @Published private(set) var goals: [FinanceGoal] = []
+    @Published private(set) var bills: [FinanceBill] = []
     @Published private(set) var isSyncingTransactions = false
+    @Published private(set) var isSyncingResources = false
     @Published var errorMessage: String?
 
     var pendingTransactionCount: Int {
         transactions.filter { apiID(from: $0.externalReference) == nil }.count
+    }
+
+    var pendingResourceCount: Int {
+        accounts.filter { $0.serverID == nil }.count
+            + goals.filter { $0.serverID == nil }.count
+            + bills.filter { $0.serverID == nil }.count
     }
 
     private let context: NSManagedObjectContext
@@ -60,6 +70,18 @@ final class FinanceStore: ObservableObject {
         let budgetRequest = NSFetchRequest<BudgetEntity>(entityName: "Budget")
         budgetRequest.sortDescriptors = [NSSortDescriptor(key: "month", ascending: false)]
         budgets = try context.fetch(budgetRequest).map(Self.budget)
+
+        let accountRequest = NSFetchRequest<AccountEntity>(entityName: "Account")
+        accountRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        accounts = try context.fetch(accountRequest).map(Self.account)
+
+        let goalRequest = NSFetchRequest<GoalEntity>(entityName: "Goal")
+        goalRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        goals = try context.fetch(goalRequest).map(Self.goal)
+
+        let billRequest = NSFetchRequest<BillEntity>(entityName: "Bill")
+        billRequest.sortDescriptors = [NSSortDescriptor(key: "dueDay", ascending: true)]
+        bills = try context.fetch(billRequest).map(Self.bill)
     }
 
     func save(_ transaction: FinanceTransaction) throws {
@@ -187,6 +209,150 @@ final class FinanceStore: ObservableObject {
         }
     }
 
+    func save(_ account: FinanceAccount) throws {
+        let name = account.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw FinanceStoreError.invalidCategory }
+        let entity = try find(AccountEntity.self, named: "Account", id: account.id)
+            ?? insert(AccountEntity.self, named: "Account")
+        entity.id = account.id
+        entity.serverID = account.serverID
+        entity.name = name
+        entity.type = account.type.rawValue
+        entity.balanceMinor = account.balanceMinor
+        entity.limitMinor = account.limitMinor
+        entity.color = account.color
+        entity.bank = account.bank
+        try persist()
+    }
+
+    func delete(_ account: FinanceAccount) throws {
+        if let entity = try find(AccountEntity.self, named: "Account", id: account.id) {
+            context.delete(entity)
+            try persist()
+        }
+    }
+
+    func save(_ goal: FinanceGoal) throws {
+        let name = goal.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw FinanceStoreError.invalidCategory }
+        guard goal.targetMinor > 0 else { throw FinanceStoreError.invalidAmount }
+        let entity = try find(GoalEntity.self, named: "Goal", id: goal.id)
+            ?? insert(GoalEntity.self, named: "Goal")
+        entity.id = goal.id
+        entity.serverID = goal.serverID
+        entity.name = name
+        entity.icon = goal.icon
+        entity.targetMinor = goal.targetMinor
+        entity.currentMinor = goal.currentMinor
+        entity.color = goal.color
+        entity.deadline = goal.deadline
+        try persist()
+    }
+
+    func delete(_ goal: FinanceGoal) throws {
+        if let entity = try find(GoalEntity.self, named: "Goal", id: goal.id) {
+            context.delete(entity)
+            try persist()
+        }
+    }
+
+    func save(_ bill: FinanceBill) throws {
+        let name = bill.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw FinanceStoreError.invalidCategory }
+        guard bill.amountMinor > 0 else { throw FinanceStoreError.invalidAmount }
+        let entity = try find(BillEntity.self, named: "Bill", id: bill.id)
+            ?? insert(BillEntity.self, named: "Bill")
+        entity.id = bill.id
+        entity.serverID = bill.serverID
+        entity.name = name
+        entity.amountMinor = bill.amountMinor
+        entity.dueDay = Int64(min(max(bill.dueDay, 1), 31))
+        entity.category = bill.category
+        entity.color = bill.color
+        entity.paid = bill.paid
+        try persist()
+    }
+
+    func delete(_ bill: FinanceBill) throws {
+        if let entity = try find(BillEntity.self, named: "Bill", id: bill.id) {
+            context.delete(entity)
+            try persist()
+        }
+    }
+
+    func syncResources(accessToken: String) async {
+        isSyncingResources = true
+        defer { isSyncingResources = false }
+        do {
+            let remoteAccounts = try await api.listAccounts(accessToken: accessToken)
+            let remoteGoals = try await api.listGoals(accessToken: accessToken)
+            let remoteBills = try await api.listBills(accessToken: accessToken)
+            for item in remoteAccounts { if let local = localAccount(from: item) { try save(local) } }
+            for item in remoteGoals { if let local = localGoal(from: item) { try save(local) } }
+            for item in remoteBills { if let local = localBill(from: item) { try save(local) } }
+            await uploadPendingResources(accessToken: accessToken)
+        } catch {
+            errorMessage = "Account, goal and bill sync failed: \(error.localizedDescription)"
+        }
+    }
+
+    func pushAccount(_ account: FinanceAccount, accessToken: String) async {
+        do {
+            if let serverID = account.serverID {
+                try await api.updateAccount(id: serverID, account, accessToken: accessToken)
+            } else {
+                let remote = try await api.createAccount(account, accessToken: accessToken)
+                try attachServerID(remote.id, to: account.id, entityName: "Account", type: AccountEntity.self)
+            }
+        } catch { errorMessage = "Saved on this device, but the account online save failed: \(error.localizedDescription)" }
+    }
+
+    func pushGoal(_ goal: FinanceGoal, accessToken: String) async {
+        do {
+            if let serverID = goal.serverID {
+                try await api.updateGoal(id: serverID, goal, accessToken: accessToken)
+            } else {
+                let remote = try await api.createGoal(goal, accessToken: accessToken)
+                try attachServerID(remote.id, to: goal.id, entityName: "Goal", type: GoalEntity.self)
+            }
+        } catch { errorMessage = "Saved on this device, but the goal online save failed: \(error.localizedDescription)" }
+    }
+
+    func pushBill(_ bill: FinanceBill, accessToken: String) async {
+        do {
+            if let serverID = bill.serverID {
+                try await api.updateBill(id: serverID, bill, accessToken: accessToken)
+            } else {
+                let remote = try await api.createBill(bill, accessToken: accessToken)
+                try attachServerID(remote.id, to: bill.id, entityName: "Bill", type: BillEntity.self)
+            }
+        } catch { errorMessage = "Saved on this device, but the bill online save failed: \(error.localizedDescription)" }
+    }
+
+    func deleteAccount(_ account: FinanceAccount, accessToken: String?) async {
+        do { if let token = accessToken, let id = account.serverID { try await api.deleteAccount(id: id, accessToken: token) }; try delete(account) }
+        catch { errorMessage = "The account could not be deleted: \(error.localizedDescription)" }
+    }
+
+    func deleteGoal(_ goal: FinanceGoal, accessToken: String?) async {
+        do { if let token = accessToken, let id = goal.serverID { try await api.deleteGoal(id: id, accessToken: token) }; try delete(goal) }
+        catch { errorMessage = "The goal could not be deleted: \(error.localizedDescription)" }
+    }
+
+    func deleteBill(_ bill: FinanceBill, accessToken: String?) async {
+        do { if let token = accessToken, let id = bill.serverID { try await api.deleteBill(id: id, accessToken: token) }; try delete(bill) }
+        catch { errorMessage = "The bill could not be deleted: \(error.localizedDescription)" }
+    }
+
+    func toggleBill(_ bill: FinanceBill, accessToken: String?) async {
+        do {
+            if let token = accessToken, let id = bill.serverID { try await api.toggleBillPaid(id: id, accessToken: token) }
+            var changed = bill
+            changed.paid.toggle()
+            try save(changed)
+        } catch { errorMessage = "The bill status could not be updated: \(error.localizedDescription)" }
+    }
+
     private func persist() throws {
         if context.hasChanges { try context.save() }
         try reload()
@@ -262,6 +428,95 @@ final class FinanceStore: ObservableObject {
             categoryID: entity.categoryID, amountMinor: entity.amountMinor,
             currency: entity.currency
         )
+    }
+
+    private static func account(_ entity: AccountEntity) -> FinanceAccount {
+        FinanceAccount(
+            id: entity.id, serverID: entity.serverID, name: entity.name,
+            type: FinanceAccountType(rawValue: entity.type) ?? .checking,
+            balanceMinor: entity.balanceMinor, limitMinor: entity.limitMinor,
+            color: entity.color, bank: entity.bank
+        )
+    }
+
+    private static func goal(_ entity: GoalEntity) -> FinanceGoal {
+        FinanceGoal(
+            id: entity.id, serverID: entity.serverID, name: entity.name,
+            icon: entity.icon, targetMinor: entity.targetMinor,
+            currentMinor: entity.currentMinor, color: entity.color,
+            deadline: entity.deadline
+        )
+    }
+
+    private static func bill(_ entity: BillEntity) -> FinanceBill {
+        FinanceBill(
+            id: entity.id, serverID: entity.serverID, name: entity.name,
+            amountMinor: entity.amountMinor, dueDay: Int(entity.dueDay),
+            category: entity.category, color: entity.color, paid: entity.paid
+        )
+    }
+
+    private func localAccount(from remote: RemoteAccount) -> FinanceAccount? {
+        let existing = accounts.first { $0.serverID == remote.id }
+        return FinanceAccount(
+            id: existing?.id ?? UUID(), serverID: remote.id,
+            name: remote.name ?? existing?.name ?? "Account",
+            type: FinanceAccountType(rawValue: remote.type ?? "") ?? existing?.type ?? .checking,
+            balanceMinor: remote.balance.map { Int64(($0 * 100).rounded()) } ?? existing?.balanceMinor ?? 0,
+            limitMinor: remote.limit.map { Int64(($0 * 100).rounded()) } ?? existing?.limitMinor ?? 0,
+            color: remote.color ?? existing?.color ?? "#2E9D68",
+            bank: remote.bank ?? existing?.bank ?? ""
+        )
+    }
+
+    private func localGoal(from remote: RemoteGoal) -> FinanceGoal? {
+        let existing = goals.first { $0.serverID == remote.id }
+        return FinanceGoal(
+            id: existing?.id ?? UUID(), serverID: remote.id,
+            name: remote.name ?? existing?.name ?? "Goal",
+            icon: remote.icon ?? existing?.icon ?? "target",
+            targetMinor: remote.target.map { Int64(($0 * 100).rounded()) } ?? existing?.targetMinor ?? 0,
+            currentMinor: remote.current.map { Int64(($0 * 100).rounded()) } ?? existing?.currentMinor ?? 0,
+            color: remote.color ?? existing?.color ?? "#2E9D68",
+            deadline: remote.deadline ?? existing?.deadline ?? ""
+        )
+    }
+
+    private func localBill(from remote: RemoteBill) -> FinanceBill? {
+        let existing = bills.first { $0.serverID == remote.id }
+        return FinanceBill(
+            id: existing?.id ?? UUID(), serverID: remote.id,
+            name: remote.name ?? existing?.name ?? "Bill",
+            amountMinor: remote.amount.map { Int64((abs($0) * 100).rounded()) } ?? existing?.amountMinor ?? 0,
+            dueDay: remote.dueDay ?? existing?.dueDay ?? 1,
+            category: remote.category ?? existing?.category ?? "Bills",
+            color: remote.color ?? existing?.color ?? "#4886D2",
+            paid: remote.paid ?? existing?.paid ?? false
+        )
+    }
+
+    private func attachServerID(_ serverID: String, to localID: UUID, entityName: String, type: AccountEntity.Type) throws {
+        guard let entity = try find(type, named: entityName, id: localID) else { return }
+        entity.serverID = serverID
+        try persist()
+    }
+
+    private func attachServerID(_ serverID: String, to localID: UUID, entityName: String, type: GoalEntity.Type) throws {
+        guard let entity = try find(type, named: entityName, id: localID) else { return }
+        entity.serverID = serverID
+        try persist()
+    }
+
+    private func attachServerID(_ serverID: String, to localID: UUID, entityName: String, type: BillEntity.Type) throws {
+        guard let entity = try find(type, named: entityName, id: localID) else { return }
+        entity.serverID = serverID
+        try persist()
+    }
+
+    private func uploadPendingResources(accessToken: String) async {
+        for account in accounts where account.serverID == nil { await pushAccount(account, accessToken: accessToken) }
+        for goal in goals where goal.serverID == nil { await pushGoal(goal, accessToken: accessToken) }
+        for bill in bills where bill.serverID == nil { await pushBill(bill, accessToken: accessToken) }
     }
 
     private func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {

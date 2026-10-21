@@ -34,6 +34,15 @@ struct SettingsView: View {
                 NavigationLink { BudgetsView() } label: {
                     Label("Budgets", systemImage: "chart.pie")
                 }
+                NavigationLink { AccountsView() } label: {
+                    Label("Accounts", systemImage: "building.columns")
+                }
+                NavigationLink { GoalsView() } label: {
+                    Label("Goals", systemImage: "target")
+                }
+                NavigationLink { BillsView() } label: {
+                    Label("Bills", systemImage: "calendar.badge.clock")
+                }
                 NavigationLink { ImportView() } label: {
                     Label("Import message or receipt", systemImage: "square.and.arrow.down")
                 }
@@ -57,7 +66,7 @@ struct SettingsView: View {
                 )) {
                     Label("Require device unlock", systemImage: "lock.shield")
                 }
-                Text("Your transactions are stored on this device. Transaction sync will be added in the next phase.")
+                Text("Your finance data is stored on this device and syncs when you sign in.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
