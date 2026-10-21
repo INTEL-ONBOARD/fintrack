@@ -20,6 +20,7 @@
     </array>
     <key>LSRequiresIPhoneOS</key><true/>
     <key>NSFaceIDUsageDescription</key><string>Unlock your private finance data.</string>
+    <key>NSLocationWhenInUseUsageDescription</key><string>Use your location to mark where this transaction happened.</string>
     <key>UILaunchScreen</key><dict/>
     <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
     <key>UISupportedInterfaceOrientations</key>

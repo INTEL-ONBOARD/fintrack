@@ -16,6 +16,7 @@ final class TransactionEntity: NSManagedObject {
     @NSManaged var externalReference: String?
     @NSManaged var latitude: NSNumber?
     @NSManaged var longitude: NSNumber?
+    @NSManaged var locationName: String?
 }
 
 @objc(CategoryEntity)
@@ -92,7 +93,8 @@ final class PersistenceController {
             attribute("source", .stringAttributeType),
             attribute("externalReference", .stringAttributeType, optional: true),
             attribute("latitude", .doubleAttributeType, optional: true),
-            attribute("longitude", .doubleAttributeType, optional: true)
+            attribute("longitude", .doubleAttributeType, optional: true),
+            attribute("locationName", .stringAttributeType, optional: true)
         ])
     }
 

@@ -1,3 +1,4 @@
+import CoreLocation
 import SwiftUI
 
 struct TransactionEditorView: View {
@@ -15,6 +16,9 @@ struct TransactionEditorView: View {
     @State private var tagsText: String
     @State private var paymentMethod: String
     @State private var occurredAt: Date
+    @State private var transactionCoordinate: CLLocationCoordinate2D?
+    @State private var transactionLocationName: String?
+    @State private var showingLocationPicker = false
     @State private var errorMessage: String?
 
     init(transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false, reviewWarning: String? = nil) {
@@ -32,6 +36,12 @@ struct TransactionEditorView: View {
         _tagsText = State(initialValue: transaction?.tags.joined(separator: ", ") ?? "")
         _paymentMethod = State(initialValue: transaction?.paymentMethod ?? "")
         _occurredAt = State(initialValue: transaction?.occurredAt ?? .now)
+        if let transaction, let latitude = transaction.latitude, let longitude = transaction.longitude {
+            _transactionCoordinate = State(initialValue: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+        } else {
+            _transactionCoordinate = State(initialValue: nil)
+        }
+        _transactionLocationName = State(initialValue: transaction?.locationName)
     }
 
     var body: some View {
@@ -71,6 +81,23 @@ struct TransactionEditorView: View {
                     TextField("Payment method", text: $paymentMethod)
                 }
 
+                Section("Location") {
+                    Button {
+                        showingLocationPicker = true
+                    } label: {
+                        Label(
+                            transactionLocationName ?? (transactionCoordinate == nil ? "Add a place" : "Location selected"),
+                            systemImage: transactionCoordinate == nil ? "mappin.and.ellipse" : "checkmark.circle"
+                        )
+                    }
+                    if transactionCoordinate != nil {
+                        Button("Remove Location", role: .destructive) {
+                            transactionCoordinate = nil
+                            transactionLocationName = nil
+                        }
+                    }
+                }
+
                 Section {
                     Button(original == nil || isReviewDraft ? "Save Transaction" : "Save Changes") { save() }
                         .buttonStyle(PrimaryButtonStyle())
@@ -81,6 +108,9 @@ struct TransactionEditorView: View {
             .navigationTitle(isReviewDraft ? "Review Transaction" : (original == nil ? "Add Transaction" : "Edit Transaction"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
+            .sheet(isPresented: $showingLocationPicker) {
+                LocationPickerView(coordinate: $transactionCoordinate, locationName: $transactionLocationName)
+            }
             .alert("Unable to save", isPresented: Binding(
                 get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
             )) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }
@@ -105,6 +135,9 @@ struct TransactionEditorView: View {
         transaction.tags = tagsText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         transaction.paymentMethod = paymentMethod
         transaction.occurredAt = occurredAt
+        transaction.latitude = transactionCoordinate?.latitude
+        transaction.longitude = transactionCoordinate?.longitude
+        transaction.locationName = transactionLocationName
         do {
             try store.save(transaction)
             dismiss()

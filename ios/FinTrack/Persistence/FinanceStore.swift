@@ -80,6 +80,7 @@ final class FinanceStore: ObservableObject {
         entity.externalReference = transaction.externalReference
         entity.latitude = transaction.latitude.map(NSNumber.init(value:))
         entity.longitude = transaction.longitude.map(NSNumber.init(value:))
+        entity.locationName = transaction.locationName
         try persist()
     }
 
@@ -195,7 +196,8 @@ final class FinanceStore: ObservableObject {
             source: TransactionSource(rawValue: entity.source) ?? .manual,
             externalReference: entity.externalReference,
             latitude: entity.latitude?.doubleValue,
-            longitude: entity.longitude?.doubleValue
+            longitude: entity.longitude?.doubleValue,
+            locationName: entity.locationName
         )
     }
 

@@ -156,6 +156,8 @@ private struct MainTabView: View {
                 .tabItem { Label("Transactions", systemImage: "list.bullet.rectangle") }
             NavigationStack { ReportsView() }
                 .tabItem { Label("Reports", systemImage: "chart.bar") }
+            NavigationStack { SpendingMapView() }
+                .tabItem { Label("Map", systemImage: "map") }
             NavigationStack { SettingsView() }
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }

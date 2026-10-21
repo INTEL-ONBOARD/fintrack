@@ -48,13 +48,15 @@ struct FinanceTransaction: Identifiable, Equatable {
     var externalReference: String?
     var latitude: Double?
     var longitude: Double?
+    var locationName: String?
 
     init(
         id: UUID = UUID(), kind: TransactionKind, amountMinor: Int64,
         currency: String = "LKR", occurredAt: Date = .now,
         categoryID: UUID? = nil, merchant: String = "", note: String = "",
         tags: [String] = [], paymentMethod: String = "", source: TransactionSource = .manual,
-        externalReference: String? = nil, latitude: Double? = nil, longitude: Double? = nil
+        externalReference: String? = nil, latitude: Double? = nil, longitude: Double? = nil,
+        locationName: String? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -70,6 +72,7 @@ struct FinanceTransaction: Identifiable, Equatable {
         self.externalReference = externalReference
         self.latitude = latitude
         self.longitude = longitude
+        self.locationName = locationName
     }
 }
 
