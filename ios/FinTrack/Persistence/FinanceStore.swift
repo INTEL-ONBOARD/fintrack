@@ -32,6 +32,7 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var goals: [FinanceGoal] = []
     @Published private(set) var bills: [FinanceBill] = []
     @Published private(set) var notifications: [FinanceNotification] = []
+    @Published private(set) var settings: FinanceUserSettings
     @Published private(set) var isSyncingTransactions = false
     @Published private(set) var isSyncingResources = false
     @Published var errorMessage: String?
@@ -52,6 +53,12 @@ final class FinanceStore: ObservableObject {
 
     init(persistence: PersistenceController = .shared) {
         context = persistence.container.viewContext
+        if let data = UserDefaults.standard.data(forKey: "financeUserSettings"),
+           let saved = try? JSONDecoder().decode(FinanceUserSettings.self, from: data) {
+            settings = saved
+        } else {
+            settings = FinanceUserSettings()
+        }
         do {
             try seedCategoriesIfNeeded()
             try reload()
@@ -326,6 +333,30 @@ final class FinanceStore: ObservableObject {
         }
     }
 
+    func syncSettings(accessToken: String) async {
+        do {
+            guard let remote = try await api.getSettings(accessToken: accessToken) else { return }
+            var updated = settings
+            updated.name = remote.name ?? updated.name
+            updated.email = remote.email ?? updated.email
+            updated.currency = remote.currency ?? updated.currency
+            updated.notifications = remote.notifs ?? updated.notifications
+            setSettings(updated)
+        } catch {
+            errorMessage = "Settings sync failed: \(error.localizedDescription)"
+        }
+    }
+
+    func saveSettings(_ value: FinanceUserSettings, accessToken: String?) async {
+        setSettings(value)
+        guard let accessToken else { return }
+        do {
+            try await api.saveSettings(value, accessToken: accessToken)
+        } catch {
+            errorMessage = "Settings were saved on this device, but online save failed: \(error.localizedDescription)"
+        }
+    }
+
     func pushAccount(_ account: FinanceAccount, accessToken: String) async {
         do {
             if let serverID = account.serverID {
@@ -424,6 +455,13 @@ final class FinanceStore: ObservableObject {
     private func persist() throws {
         if context.hasChanges { try context.save() }
         try reload()
+    }
+
+    private func setSettings(_ value: FinanceUserSettings) {
+        settings = value
+        if let data = try? JSONEncoder().encode(value) {
+            UserDefaults.standard.set(data, forKey: "financeUserSettings")
+        }
     }
 
     private func find<T: NSManagedObject>(_ type: T.Type, named name: String, id: UUID) throws -> T? {

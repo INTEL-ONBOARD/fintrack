@@ -89,3 +89,18 @@ import Testing
     #expect(json["type"] as? String == "alert")
     #expect(json["read"] as? Bool == false)
 }
+
+@Test func settingsRequestKeepsCurrencyAndNotificationPreferences() throws {
+    let settings = FinanceUserSettings(
+        name: "Alex", email: "alex@example.com", currency: "LKR",
+        notifications: ["billAlerts": true, "monthlySummary": false]
+    )
+    let data = try JSONEncoder().encode(RemoteSettingsRequest(settings: settings))
+    let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let notifs = try #require(json["notifs"] as? [String: Bool])
+
+    #expect(json["name"] as? String == "Alex")
+    #expect(json["currency"] as? String == "LKR")
+    #expect(notifs["billAlerts"] == true)
+    #expect(notifs["monthlySummary"] == false)
+}

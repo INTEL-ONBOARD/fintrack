@@ -128,3 +128,17 @@ struct FinanceNotification: Identifiable, Equatable {
         self.type = type
     }
 }
+
+struct FinanceUserSettings: Codable, Equatable {
+    var name: String
+    var email: String
+    var currency: String
+    var notifications: [String: Bool]
+
+    init(name: String = "", email: String = "", currency: String = "LKR", notifications: [String: Bool] = [:]) {
+        self.name = name
+        self.email = email
+        self.currency = currency
+        self.notifications = notifications
+    }
+}

@@ -12,6 +12,9 @@ struct SettingsView: View {
             Section("Account") {
                 if let user = auth.user {
                     Label(user.email, systemImage: "person.crop.circle")
+                    NavigationLink { ProfileSettingsView() } label: {
+                        Label("Profile settings", systemImage: "slider.horizontal.3")
+                    }
                     Button("Sign out", role: .destructive) {
                         Task { await auth.logout() }
                     }

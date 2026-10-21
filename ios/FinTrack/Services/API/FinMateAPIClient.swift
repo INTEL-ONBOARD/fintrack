@@ -201,6 +201,15 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/notifications/read-all", method: "POST", accessToken: accessToken)
     }
 
+    func getSettings(accessToken: String) async throws -> RemoteSettings? {
+        try await send(path: "/api/settings", method: "GET", accessToken: accessToken)
+    }
+
+    func saveSettings(_ settings: FinanceUserSettings, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(RemoteSettingsRequest(settings: settings))
+        let _: APIStatusResponse = try await send(path: "/api/settings", method: "PUT", body: body, accessToken: accessToken)
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
@@ -434,6 +443,27 @@ struct RemoteNotificationRequest: Encodable {
         time = notification.time
         read = notification.read
         type = notification.type.rawValue
+    }
+}
+
+struct RemoteSettings: Decodable {
+    let name: String?
+    let email: String?
+    let currency: String?
+    let notifs: [String: Bool]?
+}
+
+struct RemoteSettingsRequest: Encodable {
+    let name: String
+    let email: String
+    let currency: String
+    let notifs: [String: Bool]
+
+    init(settings: FinanceUserSettings) {
+        name = settings.name
+        email = settings.email
+        currency = settings.currency
+        notifs = settings.notifications
     }
 }
 
