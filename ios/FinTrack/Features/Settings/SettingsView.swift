@@ -43,6 +43,9 @@ struct SettingsView: View {
                 NavigationLink { BillsView() } label: {
                     Label("Bills", systemImage: "calendar.badge.clock")
                 }
+                NavigationLink { NotificationsView() } label: {
+                    Label("Notifications", systemImage: "bell")
+                }
                 NavigationLink { ImportView() } label: {
                     Label("Import message or receipt", systemImage: "square.and.arrow.down")
                 }

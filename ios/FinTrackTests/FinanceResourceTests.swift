@@ -66,3 +66,26 @@ import Testing
     #expect(goal["target"] as? Double == 2_500.00)
     #expect(bill["amount"] as? Double == 32.50)
 }
+
+@Test @MainActor func notificationCanBeStoredAndMarkedReadLocally() async throws {
+    let store = FinanceStore(persistence: PersistenceController(inMemory: true))
+    let notification = FinanceNotification(title: "Bill reminder", body: "Internet is due soon")
+
+    try store.save(notification)
+    #expect(store.notifications.first?.read == false)
+
+    await store.markNotificationRead(notification, accessToken: nil)
+    #expect(store.notifications.first?.read == true)
+}
+
+@Test func notificationRequestKeepsServerFieldNames() throws {
+    let data = try JSONEncoder().encode(RemoteNotificationRequest(notification: FinanceNotification(
+        title: "Bill reminder", body: "Internet is due soon", time: "2026-10-21T12:00:00.000Z", type: .alert
+    )))
+    let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+    #expect(json["title"] as? String == "Bill reminder")
+    #expect(json["body"] as? String == "Internet is due soon")
+    #expect(json["type"] as? String == "alert")
+    #expect(json["read"] as? Bool == false)
+}

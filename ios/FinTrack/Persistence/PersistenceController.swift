@@ -72,6 +72,17 @@ final class BillEntity: NSManagedObject {
     @NSManaged var paid: Bool
 }
 
+@objc(NotificationEntity)
+final class NotificationEntity: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var serverID: String?
+    @NSManaged var title: String
+    @NSManaged var body: String
+    @NSManaged var time: String
+    @NSManaged var read: Bool
+    @NSManaged var type: String
+}
+
 final class PersistenceController {
     static let shared = PersistenceController()
 
@@ -81,7 +92,7 @@ final class PersistenceController {
         let model = NSManagedObjectModel()
         model.entities = [
             Self.transactionEntity(), Self.categoryEntity(), Self.budgetEntity(),
-            Self.accountEntity(), Self.goalEntity(), Self.billEntity()
+            Self.accountEntity(), Self.goalEntity(), Self.billEntity(), Self.notificationEntity()
         ]
         container = NSPersistentContainer(name: "FinTrack", managedObjectModel: model)
         if inMemory {
@@ -194,6 +205,18 @@ final class PersistenceController {
             attribute("category", .stringAttributeType),
             attribute("color", .stringAttributeType),
             attribute("paid", .booleanAttributeType)
+        ])
+    }
+
+    private static func notificationEntity() -> NSEntityDescription {
+        entity("Notification", className: NSStringFromClass(NotificationEntity.self), attributes: [
+            attribute("id", .UUIDAttributeType),
+            attribute("serverID", .stringAttributeType, optional: true),
+            attribute("title", .stringAttributeType),
+            attribute("body", .stringAttributeType),
+            attribute("time", .stringAttributeType),
+            attribute("read", .booleanAttributeType),
+            attribute("type", .stringAttributeType)
         ])
     }
 }

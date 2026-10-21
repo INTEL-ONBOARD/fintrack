@@ -172,6 +172,35 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/bills/\(id)/toggle-paid", method: "POST", accessToken: accessToken)
     }
 
+    func listNotifications(accessToken: String, limit: Int = 100, skip: Int = 0) async throws -> [RemoteNotification] {
+        try await send(path: "/api/notifications", method: "GET", queryItems: [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "skip", value: String(skip))
+        ], accessToken: accessToken)
+    }
+
+    func createNotification(_ notification: FinanceNotification, accessToken: String) async throws -> RemoteNotification {
+        let body = try JSONEncoder().encode(RemoteNotificationRequest(notification: notification))
+        return try await send(path: "/api/notifications", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func updateNotification(id: String, _ notification: FinanceNotification, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(RemoteNotificationRequest(notification: notification))
+        let _: APIStatusResponse = try await send(path: "/api/notifications/\(id)", method: "PATCH", body: body, accessToken: accessToken)
+    }
+
+    func deleteNotification(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/notifications/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
+    func markNotificationRead(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/notifications/\(id)/read", method: "POST", accessToken: accessToken)
+    }
+
+    func markAllNotificationsRead(accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/notifications/read-all", method: "POST", accessToken: accessToken)
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
@@ -380,6 +409,31 @@ struct RemoteBillRequest: Encodable {
         category = bill.category
         color = bill.color
         paid = bill.paid
+    }
+}
+
+struct RemoteNotification: Decodable {
+    let id: String
+    let title: String?
+    let body: String?
+    let time: String?
+    let read: Bool?
+    let type: String?
+}
+
+struct RemoteNotificationRequest: Encodable {
+    let title: String
+    let body: String
+    let time: String
+    let read: Bool
+    let type: String
+
+    init(notification: FinanceNotification) {
+        title = notification.title
+        body = notification.body
+        time = notification.time
+        read = notification.read
+        type = notification.type.rawValue
     }
 }
 

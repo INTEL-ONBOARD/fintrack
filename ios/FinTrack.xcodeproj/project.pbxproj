@@ -11,6 +11,7 @@
 		24EDA3003E7D4616DB8FBCD8 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51AA410FD8BFBE52979C792B /* TransactionsView.swift */; };
 		2D940425207D4FD330FC7A23 /* BillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673364D9956087DBB0FDE6F8 /* BillsView.swift */; };
 		2F1ED60E0014ED1B97B955F0 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53A0505EA084F7EDE6F58AF /* AuthSession.swift */; };
+		3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */; };
 		34E5F03E0DFDB83AF92BAF76 /* FinanceResourceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */; };
 		48E1787FD942F32F5E71F5B4 /* ReceiptParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC556C3F1B44AAE47920176A /* ReceiptParserTests.swift */; };
 		4D62D952C5AA2FF08474DC70 /* FinanceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F051E32D42D5538497FBB3C7 /* FinanceStoreTests.swift */; };
@@ -94,6 +95,7 @@
 		C6961CA827CFC01C79E998F2 /* TransactionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionEditorView.swift; path = Features/Transactions/TransactionEditorView.swift; sourceTree = "<group>"; };
 		C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinMateAPIClient.swift; path = Services/API/FinMateAPIClient.swift; sourceTree = "<group>"; };
 		CDEE08E0E513FCD473E3B3FC /* FinTrackShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackShortcuts.swift; path = Services/Shortcuts/FinTrackShortcuts.swift; sourceTree = "<group>"; };
+		CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotificationsView.swift; path = Features/Notifications/NotificationsView.swift; sourceTree = "<group>"; };
 		D37E30D01BEBE0D03DCE47F8 /* AuthView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthView.swift; path = Features/Auth/AuthView.swift; sourceTree = "<group>"; };
 		D53A0505EA084F7EDE6F58AF /* AuthSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthSession.swift; path = Services/Auth/AuthSession.swift; sourceTree = "<group>"; };
 		DA06478A7CFCF5041E5A2A49 /* ReceiptTextRecognizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReceiptTextRecognizer.swift; path = Services/Imports/ReceiptTextRecognizer.swift; sourceTree = "<group>"; };
@@ -157,6 +159,7 @@
 				AA2457FFCCCAA01A1EBFB9F0 /* AccountsView.swift */,
 				1CBE8B56608AD09FE81DDCFA /* GoalsView.swift */,
 				673364D9956087DBB0FDE6F8 /* BillsView.swift */,
+				CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -332,6 +335,7 @@
 				CE3DEBCA7A209A48054EB4B6 /* AccountsView.swift in Sources */,
 				C4E84360A95051F961C35520 /* GoalsView.swift in Sources */,
 				2D940425207D4FD330FC7A23 /* BillsView.swift in Sources */,
+				3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

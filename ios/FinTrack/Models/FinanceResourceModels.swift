@@ -97,3 +97,34 @@ struct FinanceBill: Identifiable, Equatable {
         self.paid = paid
     }
 }
+
+enum FinanceNotificationType: String, CaseIterable, Identifiable, Codable {
+    case alert
+    case info
+    case success
+
+    var id: String { rawValue }
+}
+
+struct FinanceNotification: Identifiable, Equatable {
+    var id: UUID
+    var serverID: String?
+    var title: String
+    var body: String
+    var time: String
+    var read: Bool
+    var type: FinanceNotificationType
+
+    init(
+        id: UUID = UUID(), serverID: String? = nil, title: String, body: String,
+        time: String = "", read: Bool = false, type: FinanceNotificationType = .info
+    ) {
+        self.id = id
+        self.serverID = serverID
+        self.title = title
+        self.body = body
+        self.time = time
+        self.read = read
+        self.type = type
+    }
+}

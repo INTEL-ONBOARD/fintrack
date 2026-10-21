@@ -31,6 +31,7 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var accounts: [FinanceAccount] = []
     @Published private(set) var goals: [FinanceGoal] = []
     @Published private(set) var bills: [FinanceBill] = []
+    @Published private(set) var notifications: [FinanceNotification] = []
     @Published private(set) var isSyncingTransactions = false
     @Published private(set) var isSyncingResources = false
     @Published var errorMessage: String?
@@ -43,6 +44,7 @@ final class FinanceStore: ObservableObject {
         accounts.filter { $0.serverID == nil }.count
             + goals.filter { $0.serverID == nil }.count
             + bills.filter { $0.serverID == nil }.count
+            + notifications.filter { $0.serverID == nil }.count
     }
 
     private let context: NSManagedObjectContext
@@ -82,6 +84,10 @@ final class FinanceStore: ObservableObject {
         let billRequest = NSFetchRequest<BillEntity>(entityName: "Bill")
         billRequest.sortDescriptors = [NSSortDescriptor(key: "dueDay", ascending: true)]
         bills = try context.fetch(billRequest).map(Self.bill)
+
+        let notificationRequest = NSFetchRequest<NotificationEntity>(entityName: "Notification")
+        notificationRequest.sortDescriptors = [NSSortDescriptor(key: "time", ascending: false)]
+        notifications = try context.fetch(notificationRequest).map(Self.notification)
     }
 
     func save(_ transaction: FinanceTransaction) throws {
@@ -280,6 +286,28 @@ final class FinanceStore: ObservableObject {
         }
     }
 
+    func save(_ notification: FinanceNotification) throws {
+        let title = notification.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { throw FinanceStoreError.invalidCategory }
+        let entity = try find(NotificationEntity.self, named: "Notification", id: notification.id)
+            ?? insert(NotificationEntity.self, named: "Notification")
+        entity.id = notification.id
+        entity.serverID = notification.serverID
+        entity.title = title
+        entity.body = notification.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        entity.time = notification.time
+        entity.read = notification.read
+        entity.type = notification.type.rawValue
+        try persist()
+    }
+
+    func delete(_ notification: FinanceNotification) throws {
+        if let entity = try find(NotificationEntity.self, named: "Notification", id: notification.id) {
+            context.delete(entity)
+            try persist()
+        }
+    }
+
     func syncResources(accessToken: String) async {
         isSyncingResources = true
         defer { isSyncingResources = false }
@@ -287,9 +315,11 @@ final class FinanceStore: ObservableObject {
             let remoteAccounts = try await api.listAccounts(accessToken: accessToken)
             let remoteGoals = try await api.listGoals(accessToken: accessToken)
             let remoteBills = try await api.listBills(accessToken: accessToken)
+            let remoteNotifications = try await api.listNotifications(accessToken: accessToken)
             for item in remoteAccounts { if let local = localAccount(from: item) { try save(local) } }
             for item in remoteGoals { if let local = localGoal(from: item) { try save(local) } }
             for item in remoteBills { if let local = localBill(from: item) { try save(local) } }
+            for item in remoteNotifications { if let local = localNotification(from: item) { try save(local) } }
             await uploadPendingResources(accessToken: accessToken)
         } catch {
             errorMessage = "Account, goal and bill sync failed: \(error.localizedDescription)"
@@ -351,6 +381,44 @@ final class FinanceStore: ObservableObject {
             changed.paid.toggle()
             try save(changed)
         } catch { errorMessage = "The bill status could not be updated: \(error.localizedDescription)" }
+    }
+
+    func markNotificationRead(_ notification: FinanceNotification, accessToken: String?) async {
+        do {
+            if let token = accessToken, let id = notification.serverID { try await api.markNotificationRead(id: id, accessToken: token) }
+            var changed = notification
+            changed.read = true
+            try save(changed)
+        } catch { errorMessage = "The notification could not be marked read: \(error.localizedDescription)" }
+    }
+
+    func markAllNotificationsRead(accessToken: String?) async {
+        do {
+            if let token = accessToken { try await api.markAllNotificationsRead(accessToken: token) }
+            for notification in notifications where !notification.read {
+                var changed = notification
+                changed.read = true
+                try save(changed)
+            }
+        } catch { errorMessage = "The notifications could not be marked read: \(error.localizedDescription)" }
+    }
+
+    func pushNotification(_ notification: FinanceNotification, accessToken: String) async {
+        do {
+            if let serverID = notification.serverID {
+                try await api.updateNotification(id: serverID, notification, accessToken: accessToken)
+            } else {
+                let remote = try await api.createNotification(notification, accessToken: accessToken)
+                try attachServerID(remote.id, to: notification.id, entityName: "Notification", type: NotificationEntity.self)
+            }
+        } catch { errorMessage = "Saved on this device, but the notification online save failed: \(error.localizedDescription)" }
+    }
+
+    func deleteNotification(_ notification: FinanceNotification, accessToken: String?) async {
+        do {
+            if let token = accessToken, let id = notification.serverID { try await api.deleteNotification(id: id, accessToken: token) }
+            try delete(notification)
+        } catch { errorMessage = "The notification could not be deleted: \(error.localizedDescription)" }
     }
 
     private func persist() throws {
@@ -456,6 +524,14 @@ final class FinanceStore: ObservableObject {
         )
     }
 
+    private static func notification(_ entity: NotificationEntity) -> FinanceNotification {
+        FinanceNotification(
+            id: entity.id, serverID: entity.serverID, title: entity.title,
+            body: entity.body, time: entity.time, read: entity.read,
+            type: FinanceNotificationType(rawValue: entity.type) ?? .info
+        )
+    }
+
     private func localAccount(from remote: RemoteAccount) -> FinanceAccount? {
         let existing = accounts.first { $0.serverID == remote.id }
         return FinanceAccount(
@@ -495,6 +571,18 @@ final class FinanceStore: ObservableObject {
         )
     }
 
+    private func localNotification(from remote: RemoteNotification) -> FinanceNotification? {
+        let existing = notifications.first { $0.serverID == remote.id }
+        return FinanceNotification(
+            id: existing?.id ?? UUID(), serverID: remote.id,
+            title: remote.title ?? existing?.title ?? "Notification",
+            body: remote.body ?? existing?.body ?? "",
+            time: remote.time ?? existing?.time ?? "",
+            read: remote.read ?? existing?.read ?? false,
+            type: FinanceNotificationType(rawValue: remote.type ?? "") ?? existing?.type ?? .info
+        )
+    }
+
     private func attachServerID(_ serverID: String, to localID: UUID, entityName: String, type: AccountEntity.Type) throws {
         guard let entity = try find(type, named: entityName, id: localID) else { return }
         entity.serverID = serverID
@@ -513,10 +601,17 @@ final class FinanceStore: ObservableObject {
         try persist()
     }
 
+    private func attachServerID(_ serverID: String, to localID: UUID, entityName: String, type: NotificationEntity.Type) throws {
+        guard let entity = try find(type, named: entityName, id: localID) else { return }
+        entity.serverID = serverID
+        try persist()
+    }
+
     private func uploadPendingResources(accessToken: String) async {
         for account in accounts where account.serverID == nil { await pushAccount(account, accessToken: accessToken) }
         for goal in goals where goal.serverID == nil { await pushGoal(goal, accessToken: accessToken) }
         for bill in bills where bill.serverID == nil { await pushBill(bill, accessToken: accessToken) }
+        for notification in notifications where notification.serverID == nil { await pushNotification(notification, accessToken: accessToken) }
     }
 
     private func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
