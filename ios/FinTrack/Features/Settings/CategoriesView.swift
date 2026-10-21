@@ -1,0 +1,84 @@
+import SwiftUI
+
+struct CategoriesView: View {
+    @EnvironmentObject private var store: FinanceStore
+    @State private var editing: FinanceCategory?
+    @State private var adding = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        List {
+            ForEach([TransactionKind.expense, .income], id: \.self) { kind in
+                Section(kind == .expense ? "Expense categories" : "Income categories") {
+                    ForEach(store.categories.filter { $0.kind == kind }) { category in
+                        Button { editing = category } label: {
+                            Label(category.name, systemImage: "circle.fill")
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(FinTrackStyle.ink, FinTrackStyle.purple)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions {
+                            Button("Delete", role: .destructive) {
+                                do { try store.delete(category) }
+                                catch { errorMessage = error.localizedDescription }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Categories")
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { adding = true } label: { Image(systemName: "plus") } } }
+        .sheet(isPresented: $adding) { CategoryEditorView() }
+        .sheet(item: $editing) { CategoryEditorView(category: $0) }
+        .alert("Category", isPresented: Binding(
+            get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+        )) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }
+    }
+}
+
+private struct CategoryEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: FinanceStore
+    let category: FinanceCategory?
+    @State private var name: String
+    @State private var kind: TransactionKind
+    @State private var errorMessage: String?
+
+    init(category: FinanceCategory? = nil) {
+        self.category = category
+        _name = State(initialValue: category?.name ?? "")
+        _kind = State(initialValue: category?.kind ?? .expense)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Name", text: $name)
+                Picker("Type", selection: $kind) {
+                    Text("Expense").tag(TransactionKind.expense)
+                    Text("Income").tag(TransactionKind.income)
+                }
+                .pickerStyle(.segmented)
+                Button("Save Category") { save() }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+            .navigationTitle(category == nil ? "Add Category" : "Edit Category")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
+            .alert("Unable to save", isPresented: Binding(
+                get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+            )) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }
+        }
+    }
+
+    private func save() {
+        let value = FinanceCategory(id: category?.id ?? UUID(), name: name, kind: kind, color: category?.color ?? "#7044D4")
+        do {
+            try store.save(value)
+            dismiss()
+        } catch { errorMessage = error.localizedDescription }
+    }
+}

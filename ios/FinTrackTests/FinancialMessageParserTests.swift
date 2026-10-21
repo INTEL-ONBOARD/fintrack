@@ -1,0 +1,97 @@
+import Testing
+@testable import FinTrack
+
+struct FinancialMessageParserTests {
+    @Test func debitWithBalanceUsesPurchaseAmount() {
+        let result = FinancialMessageParser.parse(
+            "Your card was charged LKR 4,850.00 at Keells on 21/10/2026. Available balance LKR 42,600.00. Ref: ABC12345",
+            sender: "BANK"
+        )
+
+        guard case .ready(let draft) = result else {
+            Issue.record("Expected a ready expense, got \(result)")
+            return
+        }
+        #expect(draft.amountMinorUnits == 485_000)
+        #expect(draft.kind == .expense)
+        #expect(draft.counterparty == "Keells")
+        #expect(draft.reference == "ABC12345")
+    }
+
+    @Test func incomePreservesDecimalMinorUnits() {
+        let result = FinancialMessageParser.parse("Rs. 85,000.50 credited to your account from ACME Ltd on 21/10/2026")
+        guard case .ready(let draft) = result else {
+            Issue.record("Expected a ready income, got \(result)")
+            return
+        }
+        #expect(draft.kind == .income)
+        #expect(draft.amountMinorUnits == 8_500_050)
+        #expect(draft.counterparty == "ACME Ltd")
+    }
+
+    @Test func transferRequiresDirectionReview() {
+        let result = FinancialMessageParser.parse("LKR 10,000 transferred to Savings on 21/10/2026")
+        guard case .reviewRequired(let draft, .transferDirection) = result else {
+            Issue.record("Expected transfer review, got \(result)")
+            return
+        }
+        #expect(draft.kind == .transfer)
+        #expect(draft.amountMinorUnits == 1_000_000)
+    }
+
+    @Test func refundAndBankFeeHaveSpecificKinds() {
+        let refund = FinancialMessageParser.parse("Rs 1,250 refunded at Keells on 21/10/2026")
+        let fee = FinancialMessageParser.parse("Service charge of LKR 25.50 debited at ABC Bank on 21/10/2026")
+        guard case .ready(let refundDraft) = refund,
+              case .ready(let feeDraft) = fee else {
+            Issue.record("Expected recognized refund and bank fee")
+            return
+        }
+        #expect(refundDraft.kind == .refund)
+        #expect(feeDraft.kind == .bankFee)
+        #expect(feeDraft.amountMinorUnits == 2_550)
+    }
+
+    @Test func rejectsNonTransactions() {
+        #expect(FinancialMessageParser.parse("OTP 384920 for payment of LKR 500. Do not share.") == .ignored(.authenticationMessage))
+        #expect(FinancialMessageParser.parse("Special offer: save 20% on your next LKR 5,000 purchase") == .ignored(.promotionalMessage))
+        #expect(FinancialMessageParser.parse("LKR 2,000 card payment declined at Keells") == .ignored(.unsuccessfulTransaction))
+        #expect(FinancialMessageParser.parse("Available balance LKR 50,000") == .ignored(.noTransactionEvent))
+    }
+
+    @Test func rejectsMalformedAndOverflowingAmounts() {
+        #expect(FinancialMessageParser.parse("LKR 1,25,000 debited at Keells") == .ignored(.invalidAmount))
+        #expect(FinancialMessageParser.parse("LKR 12.345 debited at Keells") == .ignored(.invalidAmount))
+        #expect(FinancialMessageParser.parse("LKR 92233720368547759 debited at Keells") == .ignored(.invalidAmount))
+        #expect(FinancialMessageParser.parse("LKR 12.345 debited at Keells. Available balance LKR 100,000") == .ignored(.invalidAmount))
+        #expect(FinancialMessageParser.parse("USD 100 debited at Keells. Available balance LKR 100,000") == .ignored(.noAmount))
+    }
+
+    @Test func ambiguousAmountsAndConflictingEventsRequireReview() {
+        let ambiguous = FinancialMessageParser.parse("LKR 2,000 paid at Keells; LKR 1,500 paid at Cargills")
+        guard case .reviewRequired(_, .multipleAmounts) = ambiguous else {
+            Issue.record("Expected amount review, got \(ambiguous)")
+            return
+        }
+
+        let conflicting = FinancialMessageParser.parse("LKR 2,000 debited and credited at Keells")
+        guard case .reviewRequired(_, .conflictingDirection) = conflicting else {
+            Issue.record("Expected direction review, got \(conflicting)")
+            return
+        }
+    }
+
+    @Test func fingerprintIsStableAcrossPresentationChanges() {
+        let a = FinancialMessageParser.parse("LKR 100 paid at Keells", sender: "Bank")
+        let b = FinancialMessageParser.parse(" lkr 100  PAID at Keells ", sender: "bank")
+        let c = FinancialMessageParser.parse("LKR 100 paid at Keells", sender: "OTHER")
+        guard case .ready(let first) = a,
+              case .ready(let second) = b,
+              case .ready(let otherSender) = c else {
+            Issue.record("Expected ready transactions")
+            return
+        }
+        #expect(first.fingerprint == second.fingerprint)
+        #expect(first.fingerprint != otherSender.fingerprint)
+    }
+}
