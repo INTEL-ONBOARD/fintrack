@@ -13,6 +13,11 @@ struct TransactionsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                if store.isSyncingTransactions {
+                    ProgressView("Syncing online transactions…")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 Picker("Filter", selection: $selectedFilter) {
                     ForEach(filters, id: \.self) { Text($0).tag($0) }
                 }

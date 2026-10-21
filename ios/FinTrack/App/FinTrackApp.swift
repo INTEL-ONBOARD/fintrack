@@ -54,6 +54,10 @@ private struct FinTrackRootView: View {
         .task {
             if deviceLockEnabled { isLocked = true; await unlock() }
         }
+        .task(id: auth.isAuthenticated) {
+            guard auth.isAuthenticated, let token = auth.token() else { return }
+            await store.syncTransactions(accessToken: token)
+        }
         .onOpenURL(perform: handleShortcutURL)
         .onChange(of: auth.isAuthenticated) { _, authenticated in
             if authenticated { hasSeenWelcome = true }

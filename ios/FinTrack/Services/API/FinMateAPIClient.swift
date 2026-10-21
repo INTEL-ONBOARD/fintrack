@@ -52,14 +52,32 @@ struct FinMateAPIClient {
         )
     }
 
+    func listTransactions(accessToken: String, limit: Int = 500, skip: Int = 0) async throws -> [RemoteTransaction] {
+        try await send(
+            path: "/api/transactions",
+            method: "GET",
+            queryItems: [
+                URLQueryItem(name: "limit", value: String(limit)),
+                URLQueryItem(name: "skip", value: String(skip))
+            ],
+            accessToken: accessToken
+        )
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
         body: Data? = nil,
+        queryItems: [URLQueryItem] = [],
         accessToken: String? = nil
     ) async throws -> Response {
         let cleanPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let url = Self.baseURL.appendingPathComponent(cleanPath)
+        var components = URLComponents(
+            url: Self.baseURL.appendingPathComponent(cleanPath),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = queryItems.isEmpty ? nil : queryItems
+        guard let url = components?.url else { throw FinMateAPIError.invalidURL }
 
         var request = URLRequest(url: url)
         request.httpMethod = method
@@ -127,6 +145,17 @@ struct VerificationResponse: Decodable {
 
 struct LogoutResponse: Decodable {
     let ok: Bool
+}
+
+struct RemoteTransaction: Decodable {
+    let id: String
+    let name: String?
+    let category: String?
+    let date: String?
+    let amount: Double
+    let account: String?
+    let note: String?
+    let currency: String?
 }
 
 struct APIErrorResponse: Decodable {

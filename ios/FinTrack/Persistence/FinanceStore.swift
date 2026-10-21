@@ -28,9 +28,11 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var transactions: [FinanceTransaction] = []
     @Published private(set) var categories: [FinanceCategory] = []
     @Published private(set) var budgets: [FinanceBudget] = []
+    @Published private(set) var isSyncingTransactions = false
     @Published var errorMessage: String?
 
     private let context: NSManagedObjectContext
+    private let api = FinMateAPIClient()
 
     init(persistence: PersistenceController = .shared) {
         context = persistence.container.viewContext
@@ -88,6 +90,21 @@ final class FinanceStore: ObservableObject {
         if let entity = try find(TransactionEntity.self, named: "Transaction", id: transaction.id) {
             context.delete(entity)
             try persist()
+        }
+    }
+
+    func syncTransactions(accessToken: String) async {
+        isSyncingTransactions = true
+        defer { isSyncingTransactions = false }
+
+        do {
+            let remoteTransactions = try await api.listTransactions(accessToken: accessToken)
+            for remoteTransaction in remoteTransactions {
+                guard let localTransaction = localTransaction(from: remoteTransaction) else { continue }
+                try save(localTransaction)
+            }
+        } catch {
+            errorMessage = "Transaction sync failed: \(error.localizedDescription)"
         }
     }
 
@@ -214,5 +231,55 @@ final class FinanceStore: ObservableObject {
             categoryID: entity.categoryID, amountMinor: entity.amountMinor,
             currency: entity.currency
         )
+    }
+
+    private func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
+        guard remote.amount != 0 else { return nil }
+
+        let kind: TransactionKind = remote.amount < 0 ? .expense : .income
+        let amountMinor = Int64((abs(remote.amount) * 100).rounded())
+        guard amountMinor > 0 else { return nil }
+
+        let externalReference = "api:\(remote.id)"
+        let localID = transactions.first(where: {
+            $0.externalReference == externalReference
+        })?.id ?? UUID()
+
+        var occurredAt = Date.now
+        if let dateText = remote.date {
+            let formatter = DateFormatter()
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM-dd"
+            if let parsedDate = formatter.date(from: dateText) {
+                occurredAt = parsedDate
+            }
+        }
+
+        let remoteCategoryID: UUID?
+        if let categoryName = remote.category {
+            remoteCategoryID = categoryID(named: categoryName, kind: kind)
+        } else {
+            remoteCategoryID = nil
+        }
+        return FinanceTransaction(
+            id: localID,
+            kind: kind,
+            amountMinor: amountMinor,
+            currency: remote.currency ?? "LKR",
+            occurredAt: occurredAt,
+            categoryID: remoteCategoryID,
+            merchant: remote.name ?? "",
+            note: remote.note ?? "",
+            paymentMethod: remote.account ?? "",
+            source: .manual,
+            externalReference: externalReference
+        )
+    }
+
+    private func categoryID(named name: String, kind: TransactionKind) -> UUID? {
+        categories.first {
+            $0.kind == kind && $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+        }?.id
     }
 }
