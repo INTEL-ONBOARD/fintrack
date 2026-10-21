@@ -4,6 +4,7 @@ import SwiftUI
 struct TransactionEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
 
     private let original: FinanceTransaction?
     private let isReviewDraft: Bool
@@ -140,6 +141,9 @@ struct TransactionEditorView: View {
         transaction.locationName = transactionLocationName
         do {
             try store.save(transaction)
+            if let accessToken = auth.token() {
+                Task { await store.pushTransaction(transaction, accessToken: accessToken) }
+            }
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

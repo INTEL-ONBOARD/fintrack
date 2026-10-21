@@ -31,6 +31,10 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var isSyncingTransactions = false
     @Published var errorMessage: String?
 
+    var pendingTransactionCount: Int {
+        transactions.filter { apiID(from: $0.externalReference) == nil }.count
+    }
+
     private let context: NSManagedObjectContext
     private let api = FinMateAPIClient()
 
@@ -62,7 +66,7 @@ final class FinanceStore: ObservableObject {
         guard transaction.amountMinor > 0 else { throw FinanceStoreError.invalidAmount }
         if let reference = transaction.externalReference,
            transactions.contains(where: {
-               $0.id != transaction.id && $0.source == transaction.source && $0.externalReference == reference
+               $0.id != transaction.id && $0.source == transaction.source && sameReference($0.externalReference, reference)
            }) {
             throw FinanceStoreError.duplicateImport
         }
@@ -93,6 +97,25 @@ final class FinanceStore: ObservableObject {
         }
     }
 
+    func deleteTransaction(_ transaction: FinanceTransaction, accessToken: String?) async {
+        do {
+            if let accessToken, let serverID = apiID(from: transaction.externalReference) {
+                try await api.deleteTransaction(id: serverID, accessToken: accessToken)
+            }
+            try delete(transaction)
+        } catch {
+            errorMessage = "The transaction could not be deleted online: \(error.localizedDescription)"
+        }
+    }
+
+    func pushTransaction(_ transaction: FinanceTransaction, accessToken: String) async {
+        do {
+            try await pushRemoteTransaction(transaction, accessToken: accessToken)
+        } catch {
+            errorMessage = "Saved on this device, but online save failed: \(error.localizedDescription)"
+        }
+    }
+
     func syncTransactions(accessToken: String) async {
         isSyncingTransactions = true
         defer { isSyncingTransactions = false }
@@ -103,9 +126,17 @@ final class FinanceStore: ObservableObject {
                 guard let localTransaction = localTransaction(from: remoteTransaction) else { continue }
                 try save(localTransaction)
             }
+            await uploadPendingTransactions(accessToken: accessToken)
         } catch {
             errorMessage = "Transaction sync failed: \(error.localizedDescription)"
         }
+    }
+
+    func retryPendingTransactions(accessToken: String) async {
+        guard !isSyncingTransactions else { return }
+        isSyncingTransactions = true
+        defer { isSyncingTransactions = false }
+        await uploadPendingTransactions(accessToken: accessToken)
     }
 
     func save(_ budget: FinanceBudget) throws {
@@ -234,16 +265,17 @@ final class FinanceStore: ObservableObject {
     }
 
     private func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
-        guard remote.amount != 0 else { return nil }
+        guard let remoteAmount = remote.amount, remoteAmount != 0 else { return nil }
 
-        let kind: TransactionKind = remote.amount < 0 ? .expense : .income
-        let amountMinor = Int64((abs(remote.amount) * 100).rounded())
+        let kind: TransactionKind = remoteAmount < 0 ? .expense : .income
+        let amountMinor = Int64((abs(remoteAmount) * 100).rounded())
         guard amountMinor > 0 else { return nil }
 
-        let externalReference = "api:\(remote.id)"
-        let localID = transactions.first(where: {
-            $0.externalReference == externalReference
-        })?.id ?? UUID()
+        let existingTransaction = transactions.first(where: {
+            apiID(from: $0.externalReference) == remote.id
+        })
+        let externalReference = existingTransaction?.externalReference ?? "api:\(remote.id)"
+        let localID = existingTransaction?.id ?? UUID()
 
         var occurredAt = Date.now
         if let dateText = remote.date {
@@ -281,5 +313,63 @@ final class FinanceStore: ObservableObject {
         categories.first {
             $0.kind == kind && $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
         }?.id
+    }
+
+    private func categoryName(for transaction: FinanceTransaction) -> String? {
+        transaction.categoryID.flatMap { categoryID in
+            categories.first(where: { $0.id == categoryID })?.name
+        }
+    }
+
+    private func uploadPendingTransactions(accessToken: String) async {
+        let pending = transactions.filter { apiID(from: $0.externalReference) == nil }
+        for transaction in pending {
+            do {
+                try await pushRemoteTransaction(transaction, accessToken: accessToken)
+            } catch {
+                errorMessage = "Saved on this device, but online save failed: \(error.localizedDescription)"
+                return
+            }
+        }
+    }
+
+    private func pushRemoteTransaction(_ transaction: FinanceTransaction, accessToken: String) async throws {
+        let category = categoryName(for: transaction)
+        if let serverID = apiID(from: transaction.externalReference) {
+            try await api.updateTransaction(
+                id: serverID,
+                transaction,
+                categoryName: category,
+                accessToken: accessToken
+            )
+        } else {
+            let remote = try await api.createTransaction(
+                transaction,
+                categoryName: category,
+                accessToken: accessToken
+            )
+            try attachRemoteID(remote.id, to: transaction.id, originalReference: transaction.externalReference)
+        }
+    }
+
+    private func attachRemoteID(_ serverID: String, to localID: UUID, originalReference: String?) throws {
+        guard let entity = try find(TransactionEntity.self, named: "Transaction", id: localID) else { return }
+        if let originalReference, !originalReference.hasPrefix("api:") {
+            entity.externalReference = "api:\(serverID)|\(originalReference)"
+        } else {
+            entity.externalReference = "api:\(serverID)"
+        }
+        try persist()
+    }
+
+    private func apiID(from reference: String?) -> String? {
+        guard let reference, reference.hasPrefix("api:") else { return nil }
+        let value = reference.dropFirst(4)
+        return value.split(separator: "|", maxSplits: 1).first.map(String.init)
+    }
+
+    private func sameReference(_ storedReference: String?, _ reference: String) -> Bool {
+        guard let storedReference else { return false }
+        return storedReference == reference || storedReference.hasSuffix("|\(reference)")
     }
 }

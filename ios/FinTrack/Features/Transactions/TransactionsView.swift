@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TransactionsView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @State private var searchText = ""
     @State private var selectedFilter = "All"
     @State private var showingEditor = false
@@ -16,6 +17,14 @@ struct TransactionsView: View {
                 if store.isSyncingTransactions {
                     ProgressView("Syncing online transactions…")
                         .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if auth.isAuthenticated && store.pendingTransactionCount > 0 {
+                    Button("Retry online sync (\(store.pendingTransactionCount))") {
+                        guard let accessToken = auth.token() else { return }
+                        Task { await store.retryPendingTransactions(accessToken: accessToken) }
+                    }
+                    .font(.subheadline)
                 }
 
                 Picker("Filter", selection: $selectedFilter) {
@@ -63,10 +72,10 @@ struct TransactionsView: View {
             get: { deleting != nil }, set: { if !$0 { deleting = nil } }
         )) {
             Button("Delete Transaction", role: .destructive) {
-                guard let deleting else { return }
-                do {
-                    try store.delete(deleting)
-                } catch { store.errorMessage = error.localizedDescription }
+                guard let transaction = deleting else { return }
+                Task {
+                    await store.deleteTransaction(transaction, accessToken: auth.token())
+                }
                 self.deleting = nil
             }
         }

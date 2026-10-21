@@ -64,6 +64,47 @@ struct FinMateAPIClient {
         )
     }
 
+    func createTransaction(
+        _ transaction: FinanceTransaction,
+        categoryName: String?,
+        accessToken: String
+    ) async throws -> RemoteTransaction {
+        let body = try JSONEncoder().encode(
+            RemoteTransactionRequest(transaction: transaction, categoryName: categoryName)
+        )
+        return try await send(
+            path: "/api/transactions",
+            method: "POST",
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
+    func updateTransaction(
+        id: String,
+        _ transaction: FinanceTransaction,
+        categoryName: String?,
+        accessToken: String
+    ) async throws {
+        let body = try JSONEncoder().encode(
+            RemoteTransactionRequest(transaction: transaction, categoryName: categoryName)
+        )
+        let _: APIStatusResponse = try await send(
+            path: "/api/transactions/\(id)",
+            method: "PATCH",
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
+    func deleteTransaction(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(
+            path: "/api/transactions/\(id)",
+            method: "DELETE",
+            accessToken: accessToken
+        )
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
@@ -152,10 +193,43 @@ struct RemoteTransaction: Decodable {
     let name: String?
     let category: String?
     let date: String?
-    let amount: Double
+    let amount: Double?
     let account: String?
     let note: String?
     let currency: String?
+}
+
+struct RemoteTransactionRequest: Encodable {
+    let name: String
+    let category: String
+    let date: String
+    let amount: Double
+    let account: String
+    let note: String
+    let currency: String
+
+    init(transaction: FinanceTransaction, categoryName: String?) {
+        name = transaction.merchant
+        category = categoryName ?? ""
+        date = Self.dateFormatter.string(from: transaction.occurredAt)
+        let value = Double(transaction.amountMinor) / 100
+        amount = transaction.kind.isInflow || transaction.kind == .refund ? abs(value) : -abs(value)
+        account = transaction.paymentMethod
+        note = transaction.note
+        currency = transaction.currency
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+}
+
+struct APIStatusResponse: Decodable {
+    let ok: Bool
 }
 
 struct APIErrorResponse: Decodable {
