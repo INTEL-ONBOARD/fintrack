@@ -218,3 +218,15 @@ import Testing
     #expect(response.ok)
     #expect(response.id == "message-1")
 }
+
+@Test func realtimeSocketEventNamesRouteToResourceRefreshes() {
+    #expect(RealtimeSyncEvent(serverEventName: "transactions:created") == .transactions)
+    #expect(RealtimeSyncEvent(serverEventName: "notifications:read-all") == .notifications)
+    #expect(RealtimeSyncEvent(serverEventName: "settings:updated") == .settings)
+    #expect(RealtimeSyncEvent(serverEventName: "presence:update") == .unknown)
+}
+
+@Test func realtimeSocketEventPacketDecodesEventName() {
+    #expect(RealtimeSyncService.eventName(from: "42[\"bills:updated\",{\"id\":\"1\"}]") == "bills:updated")
+    #expect(RealtimeSyncService.eventName(from: "2") == nil)
+}

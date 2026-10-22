@@ -5,12 +5,14 @@ import SwiftUI
 struct FinTrackApp: App {
     @StateObject private var store = FinanceStore()
     @StateObject private var auth = AuthSession()
+    @StateObject private var realtime = RealtimeSyncService()
 
     var body: some Scene {
         WindowGroup {
             FinTrackRootView()
                 .environmentObject(store)
                 .environmentObject(auth)
+                .environmentObject(realtime)
                 .tint(FinTrackStyle.purple)
                 .task { await auth.restore() }
         }
@@ -20,6 +22,7 @@ struct FinTrackApp: App {
 private struct FinTrackRootView: View {
     @EnvironmentObject private var store: FinanceStore
     @EnvironmentObject private var auth: AuthSession
+    @EnvironmentObject private var realtime: RealtimeSyncService
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
     @AppStorage("biometricLockEnabled") private var deviceLockEnabled = false
@@ -59,6 +62,24 @@ private struct FinTrackRootView: View {
             await store.syncTransactions(accessToken: token)
             await store.syncResources(accessToken: token)
             await store.syncSettings(accessToken: token)
+        }
+        .task(id: auth.isAuthenticated) {
+            guard auth.isAuthenticated, let token = auth.token() else {
+                realtime.stop()
+                return
+            }
+            for await event in realtime.stream(accessToken: token) {
+                switch event {
+                case .transactions:
+                    await store.syncTransactions(accessToken: token)
+                case .settings:
+                    await store.syncSettings(accessToken: token)
+                case .goals, .bills, .accounts, .notifications:
+                    await store.syncResources(accessToken: token)
+                case .unknown:
+                    break
+                }
+            }
         }
         .onOpenURL(perform: handleShortcutURL)
         .onChange(of: auth.isAuthenticated) { _, authenticated in

@@ -32,6 +32,7 @@
 		7E52052BB5C228E5339B9C13 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698F04BA04EF9E8BBDF53C35 /* ReportsView.swift */; };
 		7EBDAD769C4FF36A92B8DACD /* ShortcutDraftInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BCD5C5487F8E333D3029248 /* ShortcutDraftInbox.swift */; };
 		7FB945E061B809497EEF149E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
+		8628051264ACCE8EF5AD296B /* RealtimeSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */; };
 		89F11AE5A772B89DA8BCD56D /* FinancialMessageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA15FE061574C064450FB01 /* FinancialMessageParserTests.swift */; };
 		94270EF92E8D8EEFEC4FBD16 /* CategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D960BAEBB5801DDEB6DFAAA /* CategoriesView.swift */; };
 		98178B5F9424291C773060F9 /* FinTrackApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41289CC5F5655AC8D7258765 /* FinTrackApp.swift */; };
@@ -95,6 +96,7 @@
 		74216995DF970B2926DB0E80 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = Features/Settings/SettingsView.swift; sourceTree = "<group>"; };
 		7BC38B8CE588D59C117BE768 /* FinanceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceModels.swift; path = Models/FinanceModels.swift; sourceTree = "<group>"; };
 		7CA15FE061574C064450FB01 /* FinancialMessageParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinancialMessageParserTests.swift; sourceTree = "<group>"; };
+		8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RealtimeSyncService.swift; path = Services/Realtime/RealtimeSyncService.swift; sourceTree = "<group>"; };
 		946BA33E064EFD0881E14CB5 /* FinancialMessageParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinancialMessageParser.swift; path = Services/Imports/FinancialMessageParser.swift; sourceTree = "<group>"; };
 		9A707455BF415489BA029493 /* OverviewView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OverviewView.swift; path = Features/Overview/OverviewView.swift; sourceTree = "<group>"; };
 		9C8BB218DFAD6507D469A2DF /* FinanceStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceStore.swift; path = Persistence/FinanceStore.swift; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 				33A829F4145384C74516E1B5 /* PasswordChangeView.swift */,
 				267E91516178A839C36A5747 /* DataManagementView.swift */,
 				C53B1E6B341A54D0DFA5695D /* ChatView.swift */,
+				8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -360,6 +363,7 @@
 				10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */,
 				60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */,
 				4A106A3CE0CA9BA88DA5ABE0 /* ChatView.swift in Sources */,
+				8628051264ACCE8EF5AD296B /* RealtimeSyncService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
