@@ -97,6 +97,20 @@ final class FinanceStore: ObservableObject {
         notifications = try context.fetch(notificationRequest).map(Self.notification)
     }
 
+    func deleteAllLocalData() throws {
+        for entityName in ["Transaction", "Category", "Budget", "Account", "Goal", "Bill", "Notification"] {
+            let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
+            for object in try context.fetch(request) {
+                context.delete(object)
+            }
+        }
+        try context.save()
+        settings = FinanceUserSettings()
+        UserDefaults.standard.removeObject(forKey: "financeUserSettings")
+        try seedCategoriesIfNeeded()
+        try reload()
+    }
+
     func save(_ transaction: FinanceTransaction) throws {
         guard transaction.amountMinor > 0 else { throw FinanceStoreError.invalidAmount }
         if let reference = transaction.externalReference,

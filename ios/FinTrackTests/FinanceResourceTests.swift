@@ -186,3 +186,21 @@ import Testing
     #expect(response.ok)
     #expect(response.avatar.hasPrefix("data:image/png"))
 }
+
+@Test @MainActor func localDataResetRemovesFinanceRecordsAndRestoresCategories() throws {
+    let store = FinanceStore(persistence: PersistenceController(inMemory: true))
+    try store.save(FinanceTransaction(kind: .expense, amountMinor: 1_500))
+    try store.save(FinanceAccount(name: "Checking", balanceMinor: 50_000))
+    try store.save(FinanceGoal(name: "Trip", targetMinor: 100_000))
+    try store.save(FinanceBill(name: "Internet", amountMinor: 6_000))
+    try store.save(FinanceNotification(title: "Reminder", body: "Pay bill"))
+
+    try store.deleteAllLocalData()
+
+    #expect(store.transactions.isEmpty)
+    #expect(store.accounts.isEmpty)
+    #expect(store.goals.isEmpty)
+    #expect(store.bills.isEmpty)
+    #expect(store.notifications.isEmpty)
+    #expect(!store.categories.isEmpty)
+}

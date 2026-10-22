@@ -92,6 +92,12 @@ final class AuthSession: ObservableObject {
         try await api.setMonthlyEmailPreference(optIn: optIn, accessToken: accessToken)
     }
 
+    func deleteUserData() async throws {
+        guard let accessToken else { return }
+        try await api.deleteUserData(accessToken: accessToken)
+        clearSession()
+    }
+
     func logout() async {
         if let accessToken {
             try? await api.logout(accessToken: accessToken)

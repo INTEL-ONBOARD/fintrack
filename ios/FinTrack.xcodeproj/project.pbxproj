@@ -21,6 +21,7 @@
 		5381754AA15757F49087E520 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74216995DF970B2926DB0E80 /* SettingsView.swift */; };
 		55B2F7E250DB287D6A0670A8 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B1239E54B176CC61F19632B /* ImportView.swift */; };
 		60134E7C6726A4CB6D2C1D04 /* FinTrackStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */; };
+		60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267E91516178A839C36A5747 /* DataManagementView.swift */; };
 		632FF0C5EA5F7117D7A418B9 /* ReceiptParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38BD406C768E66ECE443A905 /* ReceiptParser.swift */; };
 		638727E0257C3EB7C62ADA22 /* ReceiptTextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA06478A7CFCF5041E5A2A49 /* ReceiptTextRecognizer.swift */; };
 		67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABBF984F6B06DA88D41501 /* SessionsView.swift */; };
@@ -74,6 +75,7 @@
 		1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceResourceModels.swift; path = Models/FinanceResourceModels.swift; sourceTree = "<group>"; };
 		22ABBF984F6B06DA88D41501 /* SessionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SessionsView.swift; path = Features/Settings/SessionsView.swift; sourceTree = "<group>"; };
 		25AFBCAD2C774AA9FEF63052 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		267E91516178A839C36A5747 /* DataManagementView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DataManagementView.swift; path = Features/Settings/DataManagementView.swift; sourceTree = "<group>"; };
 		28FD3A687D41CB809ACD2B37 /* FinanceMath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceMath.swift; path = Models/FinanceMath.swift; sourceTree = "<group>"; };
 		33A829F4145384C74516E1B5 /* PasswordChangeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PasswordChangeView.swift; path = Features/Auth/PasswordChangeView.swift; sourceTree = "<group>"; };
 		34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackStyle.swift; path = Design/FinTrackStyle.swift; sourceTree = "<group>"; };
@@ -172,6 +174,7 @@
 				22ABBF984F6B06DA88D41501 /* SessionsView.swift */,
 				6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */,
 				33A829F4145384C74516E1B5 /* PasswordChangeView.swift */,
+				267E91516178A839C36A5747 /* DataManagementView.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -352,6 +355,7 @@
 				67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */,
 				78906420A7FBBF9305F8E404 /* AccountRecoveryView.swift in Sources */,
 				10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */,
+				60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -89,6 +89,10 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/email/unsubscribe", method: "GET", queryItems: queryItems)
     }
 
+    func deleteUserData(accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/user/data", method: "DELETE", accessToken: accessToken)
+    }
+
     func refresh(refreshToken: String) async throws -> RefreshResponse {
         let body = try JSONEncoder().encode(RefreshRequest(refreshToken: refreshToken))
         return try await send(path: "/api/auth/refresh", method: "POST", body: body)

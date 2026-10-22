@@ -55,6 +55,9 @@ struct SettingsView: View {
                 NavigationLink { ImportView() } label: {
                     Label("Import message or receipt", systemImage: "square.and.arrow.down")
                 }
+                NavigationLink { DataManagementView() } label: {
+                    Label("Data management", systemImage: "externaldrive.badge.icloud")
+                }
             }
 
             Section("Privacy") {
