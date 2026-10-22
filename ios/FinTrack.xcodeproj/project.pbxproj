@@ -15,6 +15,7 @@
 		3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */; };
 		34E5F03E0DFDB83AF92BAF76 /* FinanceResourceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */; };
 		48E1787FD942F32F5E71F5B4 /* ReceiptParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC556C3F1B44AAE47920176A /* ReceiptParserTests.swift */; };
+		4A106A3CE0CA9BA88DA5ABE0 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C53B1E6B341A54D0DFA5695D /* ChatView.swift */; };
 		4D62D952C5AA2FF08474DC70 /* FinanceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F051E32D42D5538497FBB3C7 /* FinanceStoreTests.swift */; };
 		4E769FD8F55FE11868747F5A /* FinTrackShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEE08E0E513FCD473E3B3FC /* FinTrackShortcuts.swift */; };
 		50EAD14030CA32513DA2D1BE /* FinanceResourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DDA91BC41EE03D86893BF6A /* FinanceResourceTests.swift */; };
@@ -102,6 +103,7 @@
 		B7E81D1C30CBDB993925EBF2 /* PersistenceController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PersistenceController.swift; path = Persistence/PersistenceController.swift; sourceTree = "<group>"; };
 		BC556C3F1B44AAE47920176A /* ReceiptParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiptParserTests.swift; sourceTree = "<group>"; };
 		BD10B116BBEEE17F353C3056 /* FinTrackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C53B1E6B341A54D0DFA5695D /* ChatView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ChatView.swift; path = Features/Chat/ChatView.swift; sourceTree = "<group>"; };
 		C6961CA827CFC01C79E998F2 /* TransactionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionEditorView.swift; path = Features/Transactions/TransactionEditorView.swift; sourceTree = "<group>"; };
 		C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinMateAPIClient.swift; path = Services/API/FinMateAPIClient.swift; sourceTree = "<group>"; };
 		CDEE08E0E513FCD473E3B3FC /* FinTrackShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackShortcuts.swift; path = Services/Shortcuts/FinTrackShortcuts.swift; sourceTree = "<group>"; };
@@ -175,6 +177,7 @@
 				6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */,
 				33A829F4145384C74516E1B5 /* PasswordChangeView.swift */,
 				267E91516178A839C36A5747 /* DataManagementView.swift */,
+				C53B1E6B341A54D0DFA5695D /* ChatView.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -356,6 +359,7 @@
 				78906420A7FBBF9305F8E404 /* AccountRecoveryView.swift in Sources */,
 				10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */,
 				60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */,
+				4A106A3CE0CA9BA88DA5ABE0 /* ChatView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

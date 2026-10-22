@@ -93,6 +93,28 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/user/data", method: "DELETE", accessToken: accessToken)
     }
 
+    func listChatUsers(accessToken: String) async throws -> [RemoteChatUser] {
+        try await send(path: "/api/chat/users", method: "GET", accessToken: accessToken)
+    }
+
+    func listConversations(accessToken: String) async throws -> [RemoteConversation] {
+        try await send(path: "/api/chat/conversations", method: "GET", accessToken: accessToken)
+    }
+
+    func listMessages(conversationID: String, limit: Int = 40, before: String? = nil, accessToken: String) async throws -> [RemoteMessage] {
+        var queryItems = [
+            URLQueryItem(name: "conversationId", value: conversationID),
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+        if let before { queryItems.append(URLQueryItem(name: "before", value: before)) }
+        return try await send(path: "/api/chat/messages", method: "GET", queryItems: queryItems, accessToken: accessToken)
+    }
+
+    func sendMessage(conversationID: String, body: String, accessToken: String) async throws -> SendMessageResponse {
+        let requestBody = try JSONEncoder().encode(SendMessageRequest(conversationId: conversationID, body: body))
+        return try await send(path: "/api/chat/messages", method: "POST", body: requestBody, accessToken: accessToken)
+    }
+
     func refresh(refreshToken: String) async throws -> RefreshResponse {
         let body = try JSONEncoder().encode(RefreshRequest(refreshToken: refreshToken))
         return try await send(path: "/api/auth/refresh", method: "POST", body: body)
@@ -655,4 +677,39 @@ struct RemoteSession: Decodable, Identifiable, Equatable {
 
 struct APIErrorResponse: Decodable {
     let error: String
+}
+
+struct RemoteChatUser: Decodable, Equatable {
+    let id: String?
+    let name: String?
+    let email: String?
+    let avatar: String?
+    let lastActiveAt: String?
+
+    var stableID: String { id ?? email ?? UUID().uuidString }
+}
+
+struct RemoteConversation: Decodable, Identifiable, Equatable {
+    let id: String
+    let lastMessage: String?
+    let lastMessageAt: String?
+}
+
+struct RemoteMessage: Decodable, Identifiable, Equatable {
+    let id: String
+    let conversationId: String
+    let body: String
+    let sentAt: String
+    let senderId: String
+    let senderName: String
+}
+
+struct SendMessageRequest: Encodable {
+    let conversationId: String
+    let body: String
+}
+
+struct SendMessageResponse: Decodable, Equatable {
+    let ok: Bool
+    let id: String
 }

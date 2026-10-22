@@ -204,3 +204,17 @@ import Testing
     #expect(store.notifications.isEmpty)
     #expect(!store.categories.isEmpty)
 }
+
+@Test func chatMessageRequestUsesConversationAndBody() throws {
+    let data = try JSONEncoder().encode(SendMessageRequest(conversationId: "group", body: "Hello"))
+    let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: String])
+    #expect(json["conversationId"] == "group")
+    #expect(json["body"] == "Hello")
+}
+
+@Test func chatMessageResponseDecodesServerId() throws {
+    let data = Data("{\"ok\":true,\"id\":\"message-1\"}".utf8)
+    let response = try JSONDecoder().decode(SendMessageResponse.self, from: data)
+    #expect(response.ok)
+    #expect(response.id == "message-1")
+}

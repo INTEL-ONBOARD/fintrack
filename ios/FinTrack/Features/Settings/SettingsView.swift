@@ -18,6 +18,9 @@ struct SettingsView: View {
                     NavigationLink { SessionsView() } label: {
                         Label("Active sessions", systemImage: "lock.shield")
                     }
+                    NavigationLink { ChatView() } label: {
+                        Label("Chat", systemImage: "message")
+                    }
                     Button("Sign out", role: .destructive) {
                         Task { await auth.logout() }
                     }
