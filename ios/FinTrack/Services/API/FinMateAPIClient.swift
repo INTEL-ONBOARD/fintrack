@@ -34,6 +34,18 @@ struct FinMateAPIClient {
         return try await send(path: "/api/auth/login", method: "POST", body: body)
     }
 
+    func registerDeviceToken(_ token: String, path: String, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(
+            DeviceTokenRegistrationRequest(token: token, platform: "ios")
+        )
+        let _: APIStatusResponse = try await send(
+            path: path,
+            method: "POST",
+            body: body,
+            accessToken: accessToken
+        )
+    }
+
     func register(name: String, email: String, password: String) async throws -> VerificationResponse {
         let body = try JSONEncoder().encode(
             RegisterRequest(name: name, email: email, password: password)
@@ -418,6 +430,11 @@ private extension Dictionary {
 struct LoginRequest: Encodable {
     let email: String
     let password: String
+}
+
+struct DeviceTokenRegistrationRequest: Encodable, Equatable {
+    let token: String
+    let platform: String
 }
 
 struct RegisterRequest: Encodable {

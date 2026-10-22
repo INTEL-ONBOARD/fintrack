@@ -36,6 +36,7 @@ private struct FinTrackRootView: View {
     @State private var pendingShortcut: PendingShortcutDraft?
     @State private var linkMessage: String?
     @State private var showingAuth = false
+    @State private var lastRegisteredDeviceToken: String?
 
     init(pushService: PushNotificationService) {
         _pushService = ObservedObject(wrappedValue: pushService)
@@ -65,9 +66,10 @@ private struct FinTrackRootView: View {
             }
         }
         .task {
-            await pushService.requestPermissionAndRegister()
+            _ = await pushService.requestPermissionAndRegister()
             if deviceLockEnabled { isLocked = true; await unlock() }
             await scheduleLocalSummaryNotification()
+            refreshWidget()
         }
         .onReceive(NotificationCenter.default.publisher(for: .finTrackPushReceived)) { notification in
             guard let payload = notification.userInfo?["payload"] as? PushNotificationPayload else { return }
@@ -99,12 +101,22 @@ private struct FinTrackRootView: View {
                 }
             }
         }
+        .task(id: "\(auth.isAuthenticated)-\(pushService.deviceToken ?? "")") {
+            await registerDeviceTokenIfConfigured()
+        }
         .onOpenURL(perform: handleShortcutURL)
         .onChange(of: auth.isAuthenticated) { _, authenticated in
             if authenticated { hasSeenWelcome = true }
         }
         .onChange(of: store.transactions) { _, _ in
             Task { await scheduleLocalSummaryNotification() }
+            refreshWidget()
+        }
+        .onChange(of: store.budgets) { _, _ in
+            refreshWidget()
+        }
+        .onChange(of: store.settings) { _, _ in
+            refreshWidget()
         }
         .onChange(of: isLocked) { _, locked in
             if !locked { presentPendingShortcutIfReady() }
@@ -213,6 +225,34 @@ private struct FinTrackRootView: View {
             budgets: store.budgets,
             currency: store.settings.currency
         )
+    }
+
+    private func refreshWidget() {
+        WidgetSnapshotWriter.update(
+            transactions: store.transactions,
+            budgets: store.budgets,
+            settings: store.settings
+        )
+    }
+
+    private func registerDeviceTokenIfConfigured() async {
+        guard auth.isAuthenticated,
+              let accessToken = auth.token(),
+              let deviceToken = pushService.deviceToken,
+              deviceToken != lastRegisteredDeviceToken,
+              let path = Bundle.main.object(forInfoDictionaryKey: "APNsDeviceTokenRegistrationPath") as? String,
+              !path.isEmpty else { return }
+
+        do {
+            try await FinMateAPIClient().registerDeviceToken(
+                deviceToken,
+                path: path,
+                accessToken: accessToken
+            )
+            lastRegisteredDeviceToken = deviceToken
+        } catch {
+            // The registration path is optional until the backend route is deployed.
+        }
     }
 }
 

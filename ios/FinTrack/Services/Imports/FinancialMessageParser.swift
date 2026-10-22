@@ -42,6 +42,17 @@ enum FinancialMessageParseResult: Equatable, Sendable {
 }
 
 enum FinancialMessageParser {
+    static func parseVoice(_ message: String) -> FinancialMessageParseResult {
+        var normalized = message
+        normalized = replace(
+            #"(?i)\b([0-9][0-9,.]*)\s*(?:rupees?|lkr|rs\.?)\b"#,
+            with: "LKR $1",
+            in: normalized
+        )
+        normalized = replace(#"(?i)\b(spent|paid|purchased)\s+on\b"#, with: "$1 at", in: normalized)
+        return parse(normalized)
+    }
+
     static func parse(_ message: String, sender: String? = nil) -> FinancialMessageParseResult {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return .ignored(.noTransactionEvent) }
@@ -171,7 +182,7 @@ enum FinancialMessageParser {
 
     private static func extractCounterparty(from text: String) -> String? {
         for preposition in ["at", "from", "to", "by"] {
-            let pattern = #"(?i)\b"# + preposition + #"\s+([A-Za-z][A-Za-z0-9&' -]{1,50}?)(?=\s+(?:on|ref|reference|avail(?:able)?|balance|via|using)\b|[.,;]|$)"#
+            let pattern = #"(?i)\b"# + preposition + #"\s+([A-Za-z][A-Za-z0-9&' -]{1,50}?)(?=\s+(?:on|ref|reference|avail(?:able)?|balance|via|using)\b|\s+(?:LKR|Rs\.?)\s+[0-9]|[.,;]|$)"#
             guard let capture = firstCapture(pattern, in: text)?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !capture.isEmpty,
                   !contains(#"^(?:your )?(?:account|a/c|card|atm|bank)(?: [0-9Xx]+)?$"#, in: capture) else { continue }
@@ -193,6 +204,15 @@ enum FinancialMessageParser {
 
     private static func contains(_ pattern: String, in text: String) -> Bool {
         text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+
+    private static func replace(_ pattern: String, with replacement: String, in text: String) -> String {
+        guard let expression = try? NSRegularExpression(pattern: pattern) else { return text }
+        return expression.stringByReplacingMatches(
+            in: text,
+            range: NSRange(text.startIndex..., in: text),
+            withTemplate: replacement
+        )
     }
 
     private static func fingerprint(for text: String, sender: String?) -> String {

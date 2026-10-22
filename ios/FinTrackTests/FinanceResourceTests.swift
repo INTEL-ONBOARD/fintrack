@@ -258,3 +258,12 @@ import Testing
     #expect(RealtimeSyncService.eventName(from: "42[\"bills:updated\",{\"id\":\"1\"}]") == "bills:updated")
     #expect(RealtimeSyncService.eventName(from: "2") == nil)
 }
+
+@Test func deviceTokenRequestUsesIosPlatform() throws {
+    let data = try JSONEncoder().encode(
+        DeviceTokenRegistrationRequest(token: "abc123", platform: "ios")
+    )
+    let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: String])
+    #expect(json["token"] == "abc123")
+    #expect(json["platform"] == "ios")
+}

@@ -22,11 +22,20 @@
     <key>NSFaceIDUsageDescription</key><string>Unlock your private finance data.</string>
     <key>NSCameraUsageDescription</key><string>Scan receipts and bills on your device.</string>
     <key>NSLocationWhenInUseUsageDescription</key><string>Use your location to mark where this transaction happened.</string>
+    <key>NSMicrophoneUsageDescription</key><string>Use your voice to prepare a transaction draft.</string>
+    <key>NSSpeechRecognitionUsageDescription</key><string>Transcribe your spoken transaction on this device.</string>
     <key>UIBackgroundModes</key>
     <array><string>remote-notification</string></array>
     <key>UILaunchScreen</key><dict/>
     <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
     <key>UISupportedInterfaceOrientations</key>
     <array><string>UIInterfaceOrientationPortrait</string></array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
 </dict>
 </plist>

@@ -23,6 +23,8 @@ struct TransactionEditorView: View {
     @State private var errorMessage: String?
     @State private var categorySuggestion: OnDeviceClassificationResult?
     @State private var suggestionText = ""
+    @StateObject private var voice = VoiceTransactionService()
+    @State private var voiceWarning: String?
 
     init(transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false, reviewWarning: String? = nil) {
         original = transaction
@@ -50,9 +52,9 @@ struct TransactionEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let reviewWarning {
+                if let warning = reviewWarning ?? voiceWarning {
                     Section {
-                        Text(reviewWarning)
+                        Text(warning)
                             .font(.subheadline)
                             .foregroundStyle(.orange)
                     }
@@ -74,6 +76,33 @@ struct TransactionEditorView: View {
                     }
                     TextField("Merchant / Person", text: $merchant)
                     DatePicker("Date & time", selection: $occurredAt)
+                }
+
+                Section("Voice transaction entry") {
+                    Button {
+                        Task { await voice.toggleRecording() }
+                    } label: {
+                        Label(
+                            voice.isRecording ? "Stop listening" : "Speak transaction",
+                            systemImage: voice.isRecording ? "stop.circle" : "mic"
+                        )
+                    }
+                    if voice.isRecording {
+                        Text("Say something like: Spent on lunch with Nimal 1850 rupees.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if !voice.transcript.isEmpty {
+                        Text(voice.transcript)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Button("Use Voice Details") { applyVoiceTranscript() }
+                    }
+                    if let errorMessage = voice.errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
 
                 if let categorySuggestion, categoryID == nil {
@@ -172,6 +201,34 @@ struct TransactionEditorView: View {
             kind: kind,
             categories: availableCategories
         )
+    }
+
+    private func applyVoiceTranscript() {
+        switch FinancialMessageParser.parseVoice(voice.transcript) {
+        case .ignored:
+            voice.errorMessage = "The voice text did not contain a usable transaction."
+        case let .ready(draft):
+            applyVoiceDraft(draft, warning: nil)
+        case let .reviewRequired(draft, reason):
+            let warning: String = switch reason {
+            case .conflictingDirection: "Check whether this is money in or out."
+            case .transferDirection: "Check the transfer direction before saving."
+            case .multipleAmounts: "Check which amount should be saved."
+            case .missingCounterparty: "Add the merchant or person before saving."
+            }
+            applyVoiceDraft(draft, warning: warning)
+        }
+    }
+
+    private func applyVoiceDraft(_ draft: FinancialMessageDraft, warning: String?) {
+        kind = TransactionKind(rawValue: draft.kind.rawValue) ?? .expense
+        amountText = NSDecimalNumber(value: draft.amountMinorUnits)
+            .dividing(by: NSDecimalNumber(value: 100))
+            .stringValue
+        merchant = draft.counterparty ?? ""
+        categoryID = nil
+        voiceWarning = warning
+        updateCategorySuggestion()
     }
 
     private func save() {
