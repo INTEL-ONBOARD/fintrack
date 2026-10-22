@@ -104,3 +104,14 @@ import Testing
     #expect(notifs["billAlerts"] == true)
     #expect(notifs["monthlySummary"] == false)
 }
+
+@Test func sessionResponseDecodesDeviceAndActivityFields() throws {
+    let data = Data("""
+    [{"sessionId":"session-1","userId":"u_123","deviceLabel":"iPhone","createdAt":"2026-10-21T10:00:00.000Z","lastActiveAt":"2026-10-21T12:00:00.000Z"}]
+    """.utf8)
+    let sessions = try JSONDecoder().decode([RemoteSession].self, from: data)
+
+    #expect(sessions.count == 1)
+    #expect(sessions.first?.id == "session-1")
+    #expect(sessions.first?.deviceLabel == "iPhone")
+}

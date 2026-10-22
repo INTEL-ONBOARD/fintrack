@@ -6,6 +6,7 @@ final class AuthSession: ObservableObject {
     @Published private(set) var user: AuthUser?
     @Published private(set) var isAuthenticated = false
     @Published private(set) var isLoading = false
+    @Published private(set) var currentSessionID: String?
 
     private let api = FinMateAPIClient()
     private let keychain = KeychainStore()
@@ -63,6 +64,17 @@ final class AuthSession: ObservableObject {
         accessToken
     }
 
+    func sessions() async throws -> [RemoteSession] {
+        guard let accessToken else { return [] }
+        return try await api.listSessions(accessToken: accessToken)
+    }
+
+    func revokeSession(_ session: RemoteSession) async throws {
+        guard let accessToken, let sessionID = session.sessionId else { return }
+        try await api.revokeSession(id: sessionID, accessToken: accessToken)
+        if sessionID == currentSessionID { clearSession() }
+    }
+
     private func saveSession(_ response: AuthResponse) throws {
         let userData = try JSONEncoder().encode(response.user)
         guard let userText = String(data: userData, encoding: .utf8) else {
@@ -74,6 +86,7 @@ final class AuthSession: ObservableObject {
         accessToken = response.accessToken
         refreshToken = response.refreshToken
         user = response.user
+        currentSessionID = response.sessionId
         isAuthenticated = true
     }
 
@@ -84,6 +97,7 @@ final class AuthSession: ObservableObject {
         accessToken = nil
         refreshToken = nil
         user = nil
+        currentSessionID = nil
         isAuthenticated = false
     }
 }

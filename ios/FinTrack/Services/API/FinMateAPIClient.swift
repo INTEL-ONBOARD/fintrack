@@ -210,6 +210,14 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/settings", method: "PUT", body: body, accessToken: accessToken)
     }
 
+    func listSessions(accessToken: String) async throws -> [RemoteSession] {
+        try await send(path: "/api/sessions", method: "GET", accessToken: accessToken)
+    }
+
+    func revokeSession(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/sessions/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
@@ -465,6 +473,16 @@ struct RemoteSettingsRequest: Encodable {
         currency = settings.currency
         notifs = settings.notifications
     }
+}
+
+struct RemoteSession: Decodable, Identifiable, Equatable {
+    let sessionId: String?
+    let userId: String?
+    let deviceLabel: String?
+    let createdAt: String?
+    let lastActiveAt: String?
+
+    var id: String { sessionId ?? UUID().uuidString }
 }
 
 struct APIErrorResponse: Decodable {

@@ -15,6 +15,9 @@ struct SettingsView: View {
                     NavigationLink { ProfileSettingsView() } label: {
                         Label("Profile settings", systemImage: "slider.horizontal.3")
                     }
+                    NavigationLink { SessionsView() } label: {
+                        Label("Active sessions", systemImage: "lock.shield")
+                    }
                     Button("Sign out", role: .destructive) {
                         Task { await auth.logout() }
                     }

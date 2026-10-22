@@ -22,6 +22,7 @@
 		60134E7C6726A4CB6D2C1D04 /* FinTrackStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */; };
 		632FF0C5EA5F7117D7A418B9 /* ReceiptParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38BD406C768E66ECE443A905 /* ReceiptParser.swift */; };
 		638727E0257C3EB7C62ADA22 /* ReceiptTextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA06478A7CFCF5041E5A2A49 /* ReceiptTextRecognizer.swift */; };
+		67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABBF984F6B06DA88D41501 /* SessionsView.swift */; };
 		6CAF7589F219EBA4D433C4E6 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E81D1C30CBDB993925EBF2 /* PersistenceController.swift */; };
 		762B7E4C17DE1A7C64F42D66 /* FinMateAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */; };
 		7E52052BB5C228E5339B9C13 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698F04BA04EF9E8BBDF53C35 /* ReportsView.swift */; };
@@ -69,6 +70,7 @@
 		1D960BAEBB5801DDEB6DFAAA /* CategoriesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CategoriesView.swift; path = Features/Settings/CategoriesView.swift; sourceTree = "<group>"; };
 		1DDA91BC41EE03D86893BF6A /* FinanceResourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinanceResourceTests.swift; sourceTree = "<group>"; };
 		1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceResourceModels.swift; path = Models/FinanceResourceModels.swift; sourceTree = "<group>"; };
+		22ABBF984F6B06DA88D41501 /* SessionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SessionsView.swift; path = Features/Settings/SessionsView.swift; sourceTree = "<group>"; };
 		25AFBCAD2C774AA9FEF63052 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		28FD3A687D41CB809ACD2B37 /* FinanceMath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceMath.swift; path = Models/FinanceMath.swift; sourceTree = "<group>"; };
 		34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackStyle.swift; path = Design/FinTrackStyle.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 				673364D9956087DBB0FDE6F8 /* BillsView.swift */,
 				CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */,
 				1AD1EB21D07521ACE8FA52B9 /* ProfileSettingsView.swift */,
+				22ABBF984F6B06DA88D41501 /* SessionsView.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -340,6 +343,7 @@
 				2D940425207D4FD330FC7A23 /* BillsView.swift in Sources */,
 				3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */,
 				A39C9BAACC3B97321D7316E6 /* ProfileSettingsView.swift in Sources */,
+				67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
