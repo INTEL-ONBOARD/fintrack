@@ -339,6 +339,19 @@ final class FinanceStore: ObservableObject {
         try persist()
     }
 
+    func savePushNotification(_ payload: PushNotificationPayload) throws {
+        if let serverID = payload.id, notifications.contains(where: { $0.serverID == serverID }) {
+            return
+        }
+        try save(FinanceNotification(
+            serverID: payload.id,
+            title: payload.title,
+            body: payload.body,
+            time: payload.time,
+            type: payload.type
+        ))
+    }
+
     func delete(_ notification: FinanceNotification) throws {
         if let entity = try find(NotificationEntity.self, named: "Notification", id: notification.id) {
             context.delete(entity)

@@ -60,6 +60,7 @@
 		F2A4D6B8C0E1F23456789AC2 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC3 /* CameraPicker.swift */; };
 		F2A4D6B8C0E1F23456789AC4 /* FinancialSummaryIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC5 /* FinancialSummaryIntents.swift */; };
 		F2A4D6B8C0E1F23456789AC6 /* OnDeviceInsights.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC7 /* OnDeviceInsights.swift */; };
+		F2A4D6B8C0E1F23456789AC8 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC9 /* PushNotificationService.swift */; };
 		F690256593F9B16BA36BA0AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -128,6 +129,8 @@
 		F2A4D6B8C0E1F23456789AC3 /* CameraPicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CameraPicker.swift; path = Features/Transactions/CameraPicker.swift; sourceTree = "<group>"; };
 		F2A4D6B8C0E1F23456789AC5 /* FinancialSummaryIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinancialSummaryIntents.swift; path = Services/Shortcuts/FinancialSummaryIntents.swift; sourceTree = "<group>"; };
 		F2A4D6B8C0E1F23456789AC7 /* OnDeviceInsights.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OnDeviceInsights.swift; path = Services/Analysis/OnDeviceInsights.swift; sourceTree = "<group>"; };
+		F2A4D6B8C0E1F23456789AC9 /* PushNotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PushNotificationService.swift; path = Services/Notifications/PushNotificationService.swift; sourceTree = "<group>"; };
+		F2A4D6B8C0E1F23456789ACA /* FinTrack.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; name = FinTrack.entitlements; path = FinTrack.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -199,6 +202,8 @@
 				F2A4D6B8C0E1F23456789AC3 /* CameraPicker.swift */,
 				F2A4D6B8C0E1F23456789AC5 /* FinancialSummaryIntents.swift */,
 				F2A4D6B8C0E1F23456789AC7 /* OnDeviceInsights.swift */,
+				F2A4D6B8C0E1F23456789AC9 /* PushNotificationService.swift */,
+				F2A4D6B8C0E1F23456789ACA /* FinTrack.entitlements */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -388,6 +393,7 @@
 				F2A4D6B8C0E1F23456789AC2 /* CameraPicker.swift in Sources */,
 				F2A4D6B8C0E1F23456789AC4 /* FinancialSummaryIntents.swift in Sources */,
 				F2A4D6B8C0E1F23456789AC6 /* OnDeviceInsights.swift in Sources */,
+				F2A4D6B8C0E1F23456789AC8 /* PushNotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,6 +575,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = FinTrack/FinTrack.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FinTrack/Resources/Info.plist;
@@ -590,6 +597,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = FinTrack/FinTrack.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FinTrack/Resources/Info.plist;

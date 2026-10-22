@@ -1,15 +1,17 @@
 import LocalAuthentication
 import SwiftUI
+import UIKit
 
 @main
 struct FinTrackApp: App {
+    @UIApplicationDelegateAdaptor(PushNotificationService.self) private var pushService
     @StateObject private var store = FinanceStore()
     @StateObject private var auth = AuthSession()
     @StateObject private var realtime = RealtimeSyncService()
 
     var body: some Scene {
         WindowGroup {
-            FinTrackRootView()
+            FinTrackRootView(pushService: pushService)
                 .environmentObject(store)
                 .environmentObject(auth)
                 .environmentObject(realtime)
@@ -20,6 +22,7 @@ struct FinTrackApp: App {
 }
 
 private struct FinTrackRootView: View {
+    @ObservedObject private var pushService: PushNotificationService
     @EnvironmentObject private var store: FinanceStore
     @EnvironmentObject private var auth: AuthSession
     @EnvironmentObject private var realtime: RealtimeSyncService
@@ -33,6 +36,10 @@ private struct FinTrackRootView: View {
     @State private var pendingShortcut: PendingShortcutDraft?
     @State private var linkMessage: String?
     @State private var showingAuth = false
+
+    init(pushService: PushNotificationService) {
+        _pushService = ObservedObject(wrappedValue: pushService)
+    }
 
     var body: some View {
         Group {
@@ -58,8 +65,17 @@ private struct FinTrackRootView: View {
             }
         }
         .task {
+            await pushService.requestPermissionAndRegister()
             if deviceLockEnabled { isLocked = true; await unlock() }
             await scheduleLocalSummaryNotification()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .finTrackPushReceived)) { notification in
+            guard let payload = notification.userInfo?["payload"] as? PushNotificationPayload else { return }
+            do {
+                try store.savePushNotification(payload)
+            } catch {
+                store.errorMessage = "The push notification could not be saved: \(error.localizedDescription)"
+            }
         }
         .task(id: auth.isAuthenticated) {
             guard auth.isAuthenticated, let token = auth.token() else { return }
