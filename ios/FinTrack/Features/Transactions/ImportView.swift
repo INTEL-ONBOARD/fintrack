@@ -1,13 +1,23 @@
 import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ImportView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @State private var messageText = ""
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var isScanning = false
     @State private var reviewDraft: FinanceTransaction?
     @State private var statusMessage: String?
+    @State private var selectedStatementData: Data?
+    @State private var selectedStatementName = ""
+    @State private var statementAnalysis: StatementAnalysis?
+    @State private var accountName = ""
+    @State private var bankLabel = ""
+    @State private var isAnalyzingStatement = false
+    @State private var isCommittingStatement = false
+    @State private var showingStatementPicker = false
 
     var body: some View {
         ScrollView {
@@ -26,6 +36,20 @@ struct ImportView: View {
                         .accessibilityLabel("Financial message text")
                     Button("Review Message") { parseMessage() }
                         .buttonStyle(PrimaryButtonStyle())
+                }
+
+                FinanceCard {
+                    Text("Bank statement").font(.headline)
+                    Text("Upload a CSV, Excel or PDF statement and review the detected rows before importing.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Button("Choose Statement", systemImage: "doc.badge.plus") { showingStatementPicker = true }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(isAnalyzingStatement || isCommittingStatement)
+                    if isAnalyzingStatement { ProgressView("Analyzing statement…") }
+                    if let statementAnalysis {
+                        statementPreview(statementAnalysis)
+                    }
                 }
 
                 FinanceCard {
@@ -58,6 +82,15 @@ struct ImportView: View {
         }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: statusMessage)
+        }
+        .fileImporter(
+            isPresented: $showingStatementPicker,
+            allowedContentTypes: [.commaSeparatedText, .spreadsheet, .pdf]
+        ) { result in
+            switch result {
+            case .success(let url): Task { await analyzeStatement(url) }
+            case .failure(let error): statusMessage = error.localizedDescription
+            }
         }
     }
 
@@ -105,6 +138,87 @@ struct ImportView: View {
             statusMessage = draft.issues.isEmpty
                 ? "Review the extracted transaction before saving."
                 : "Some receipt details need your review."
+        } catch {
+            statusMessage = error.localizedDescription
+        }
+    }
+
+    @ViewBuilder
+    private func statementPreview(_ analysis: StatementAnalysis) -> some View {
+        Divider().padding(.vertical, 4)
+        Text(selectedStatementName).font(.subheadline.bold())
+        if let confidence = analysis.confidence {
+            Text("Detection confidence: \(Int(confidence * 100))%")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        TextField("Account name", text: $accountName)
+            .textFieldStyle(.roundedBorder)
+        TextField("Bank label (optional)", text: $bankLabel)
+            .textFieldStyle(.roundedBorder)
+        ForEach(Array((analysis.preview ?? []).prefix(5).enumerated()), id: \.offset) { _, row in
+            HStack {
+                Text(row.date).font(.caption)
+                Text(row.name).lineLimit(1)
+                Spacer()
+                Text(String(format: "%.2f", row.amount)).font(.caption.monospacedDigit())
+            }
+        }
+        if analysis.mapping != nil {
+            Button("Import Statement") { Task { await commitStatement(analysis) } }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(accountName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isCommittingStatement)
+        } else {
+            Text("The server did not return a usable column mapping.")
+                .font(.caption).foregroundStyle(.red)
+        }
+        if isCommittingStatement { ProgressView("Importing statement…") }
+    }
+
+    private func analyzeStatement(_ url: URL) async {
+        guard let token = auth.token() else {
+            statusMessage = "Sign in before uploading a bank statement."
+            return
+        }
+        guard url.startAccessingSecurityScopedResource() else {
+            statusMessage = "The selected statement could not be opened."
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        isAnalyzingStatement = true
+        defer { isAnalyzingStatement = false }
+        do {
+            let data = try Data(contentsOf: url)
+            guard data.count <= 10 * 1024 * 1024 else {
+                statusMessage = "Statements must be 10 MB or smaller."
+                return
+            }
+            selectedStatementData = data
+            selectedStatementName = url.lastPathComponent
+            statementAnalysis = try await store.analyzeStatement(
+                fileData: data, fileName: url.lastPathComponent, accessToken: token
+            )
+            accountName = store.accounts.first?.name ?? ""
+            statusMessage = "Review the detected rows before importing."
+        } catch {
+            statusMessage = error.localizedDescription
+        }
+    }
+
+    private func commitStatement(_ analysis: StatementAnalysis) async {
+        guard let data = selectedStatementData, let mapping = analysis.mapping,
+              let token = auth.token() else { return }
+        isCommittingStatement = true
+        defer { isCommittingStatement = false }
+        do {
+            let result = try await store.commitStatement(
+                fileData: data, fileName: selectedStatementName,
+                accountName: accountName.trimmingCharacters(in: .whitespacesAndNewlines),
+                mapping: mapping, fingerprint: analysis.fingerprint,
+                bankLabel: bankLabel.isEmpty ? nil : bankLabel, accessToken: token
+            )
+            statusMessage = "Imported \(result.imported) transactions. Skipped \(result.skipped) duplicates."
+            statementAnalysis = nil
+            selectedStatementData = nil
         } catch {
             statusMessage = error.localizedDescription
         }

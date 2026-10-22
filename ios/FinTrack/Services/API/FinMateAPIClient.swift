@@ -218,6 +218,35 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/sessions/\(id)", method: "DELETE", accessToken: accessToken)
     }
 
+    func analyzeStatement(fileData: Data, fileName: String, accessToken: String) async throws -> StatementAnalysis {
+        try await sendMultipart(
+            path: "/api/import/analyze", fileData: fileData, fileName: fileName,
+            fields: [:], accessToken: accessToken
+        )
+    }
+
+    func commitStatement(
+        fileData: Data, fileName: String, accountName: String,
+        mapping: StatementMapping, categoryOverrides: [Int: String] = [:],
+        fingerprint: String?, bankLabel: String?, accessToken: String
+    ) async throws -> StatementImportResult {
+        let mappingData = try JSONEncoder().encode(mapping)
+        guard let mappingText = String(data: mappingData, encoding: .utf8) else {
+            throw FinMateAPIError.invalidResponse
+        }
+        var fields = ["accountName": accountName, "mapping": mappingText]
+        if !categoryOverrides.isEmpty {
+            let overrideData = try JSONEncoder().encode(categoryOverrides.mapKeys(String.init))
+            fields["categoryOverrides"] = String(data: overrideData, encoding: .utf8) ?? "{}"
+        }
+        if let fingerprint { fields["fingerprint"] = fingerprint }
+        if let bankLabel { fields["bankLabel"] = bankLabel }
+        return try await sendMultipart(
+            path: "/api/import/commit", fileData: fileData, fileName: fileName,
+            fields: fields, accessToken: accessToken
+        )
+    }
+
     private func send<Response: Decodable>(
         path: String,
         method: String,
@@ -257,6 +286,58 @@ struct FinMateAPIClient {
 
         guard !data.isEmpty else { throw FinMateAPIError.emptyResponse }
         return try JSONDecoder().decode(Response.self, from: data)
+    }
+
+    private func sendMultipart<Response: Decodable>(
+        path: String, fileData: Data, fileName: String,
+        fields: [String: String], accessToken: String
+    ) async throws -> Response {
+        let cleanPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let url = Self.baseURL.appendingPathComponent(cleanPath)
+        let boundary = "FinTrack-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.multipartBody(
+            fileData: fileData, fileName: fileName, fields: fields, boundary: boundary
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else { throw FinMateAPIError.invalidResponse }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let message = (try? JSONDecoder().decode(APIErrorResponse.self, from: data))?.error
+                ?? "The FinMate request failed."
+            throw FinMateAPIError.server(statusCode: httpResponse.statusCode, message: message)
+        }
+        guard !data.isEmpty else { throw FinMateAPIError.emptyResponse }
+        return try JSONDecoder().decode(Response.self, from: data)
+    }
+
+    static func multipartBody(
+        fileData: Data, fileName: String, fields: [String: String], boundary: String
+    ) -> Data {
+        var body = Data()
+        let lineBreak = "\r\n"
+        for (name, value) in fields.sorted(by: { $0.key < $1.key }) {
+            body.append(Data("--\(boundary)\(lineBreak)".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"\(name)\"\(lineBreak)\(lineBreak)".utf8))
+            body.append(Data("\(value)\(lineBreak)".utf8))
+        }
+        body.append(Data("--\(boundary)\(lineBreak)".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\(lineBreak)".utf8))
+        body.append(Data("Content-Type: application/octet-stream\(lineBreak)\(lineBreak)".utf8))
+        body.append(fileData)
+        body.append(Data(lineBreak.utf8))
+        body.append(Data("--\(boundary)--\(lineBreak)".utf8))
+        return body
+    }
+}
+
+private extension Dictionary {
+    func mapKeys<T: Hashable>(_ transform: (Key) -> T) -> [T: Value] {
+        Dictionary<T, Value>(uniqueKeysWithValues: map { (transform($0.key), $0.value) })
     }
 }
 

@@ -115,3 +115,34 @@ import Testing
     #expect(sessions.first?.id == "session-1")
     #expect(sessions.first?.deviceLabel == "iPhone")
 }
+
+@Test func statementMappingUsesApiFieldNames() throws {
+    let mapping = StatementMapping(
+        model: "signed", date: 0, description: 1, balance: 2,
+        amount: nil, debit: nil, credit: nil, drcr: nil,
+        dateFormat: "yyyy-MM-dd",
+        numberStyle: StatementNumberStyle(decimal: ".", thousands: ","),
+        currency: "LKR"
+    )
+    let data = try JSONEncoder().encode(mapping)
+    let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+    #expect(json["date_format"] as? String == "yyyy-MM-dd")
+    #expect(json["number_style"] as? [String: String] == ["decimal": ".", "thousands": ","])
+    #expect(json["description"] as? Int == 1)
+}
+
+@Test func multipartStatementBodyContainsFileAndCommitFields() throws {
+    let body = FinMateAPIClient.multipartBody(
+        fileData: Data("date,name\n2026-10-21,Shop".utf8),
+        fileName: "statement.csv",
+        fields: ["accountName": "Checking", "mapping": "{\"model\":\"signed\"}"],
+        boundary: "test-boundary"
+    )
+    let text = try #require(String(data: body, encoding: .utf8))
+
+    #expect(text.contains("name=\"file\"; filename=\"statement.csv\""))
+    #expect(text.contains("name=\"accountName\""))
+    #expect(text.contains("Checking"))
+    #expect(text.contains("date,name"))
+}

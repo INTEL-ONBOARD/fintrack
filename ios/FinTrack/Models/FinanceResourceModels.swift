@@ -142,3 +142,73 @@ struct FinanceUserSettings: Codable, Equatable {
         self.notifications = notifications
     }
 }
+
+struct StatementNumberStyle: Codable, Equatable {
+    var decimal: String
+    var thousands: String
+}
+
+struct StatementMapping: Codable, Equatable {
+    var model: String
+    var date: Int
+    var description: Int
+    var balance: Int?
+    var amount: Int?
+    var debit: Int?
+    var credit: Int?
+    var drcr: Int?
+    var dateFormat: String
+    var numberStyle: StatementNumberStyle
+    var currency: String?
+
+    enum CodingKeys: String, CodingKey {
+        case model, date, description, balance, amount, debit, credit, drcr
+        case dateFormat = "date_format"
+        case numberStyle = "number_style"
+        case currency
+    }
+}
+
+struct StatementPreviewRow: Codable, Equatable, Identifiable {
+    var id: String { "\(date)-\(name)-\(amount)" }
+    var date: String
+    var name: String
+    var amount: Double
+    var category: String?
+    var balance: Double?
+    var currency: String?
+}
+
+struct StatementAnalysis: Codable, Equatable {
+    var fingerprint: String?
+    var mapping: StatementMapping?
+    var confidence: Double?
+    var fromProfile: Bool?
+    var currency: String?
+    var reconciliation: StatementReconciliation?
+    var dateFormat: String?
+    var numberStyle: StatementNumberStyle?
+    var headerRow: Int?
+    var dataRows: Int?
+    var preview: [StatementPreviewRow]?
+
+    enum CodingKeys: String, CodingKey {
+        case fingerprint, mapping, confidence, currency, reconciliation, preview
+        case fromProfile = "from_profile"
+        case dateFormat = "date_format"
+        case numberStyle = "number_style"
+        case headerRow = "header_row"
+        case dataRows = "data_rows"
+    }
+}
+
+struct StatementReconciliation: Codable, Equatable {
+    var checked: Int?
+    var matched: Int?
+    var ok: Bool?
+}
+
+struct StatementImportResult: Codable, Equatable {
+    var imported: Int
+    var skipped: Int
+}

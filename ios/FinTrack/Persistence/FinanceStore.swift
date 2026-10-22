@@ -347,6 +347,24 @@ final class FinanceStore: ObservableObject {
         }
     }
 
+    func analyzeStatement(fileData: Data, fileName: String, accessToken: String) async throws -> StatementAnalysis {
+        try await api.analyzeStatement(fileData: fileData, fileName: fileName, accessToken: accessToken)
+    }
+
+    func commitStatement(
+        fileData: Data, fileName: String, accountName: String,
+        mapping: StatementMapping, categoryOverrides: [Int: String] = [:],
+        fingerprint: String?, bankLabel: String?, accessToken: String
+    ) async throws -> StatementImportResult {
+        let result = try await api.commitStatement(
+            fileData: fileData, fileName: fileName, accountName: accountName,
+            mapping: mapping, categoryOverrides: categoryOverrides,
+            fingerprint: fingerprint, bankLabel: bankLabel, accessToken: accessToken
+        )
+        await syncTransactions(accessToken: accessToken)
+        return result
+    }
+
     func saveSettings(_ value: FinanceUserSettings, accessToken: String?) async {
         setSettings(value)
         guard let accessToken else { return }
