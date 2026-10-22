@@ -110,6 +110,7 @@ final class FinanceStore: ObservableObject {
         try context.save()
         settings = FinanceUserSettings()
         UserDefaults.standard.removeObject(forKey: "financeUserSettings")
+        OnDeviceClassifierFeedback.clear()
         try seedCategoriesIfNeeded()
         try reload()
     }

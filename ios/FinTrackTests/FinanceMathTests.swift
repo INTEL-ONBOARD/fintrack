@@ -89,3 +89,40 @@ import Testing
     #expect(!summary.notificationBody(showAmounts: false).contains("100,000"))
     #expect(summary.notificationBody(showAmounts: false).contains("Groceries"))
 }
+
+@Test func onDeviceClassifierSuggestsCategoryFromMerchantText() {
+    let groceries = FinanceCategory(name: "Groceries", kind: .expense)
+    let transport = FinanceCategory(name: "Transport", kind: .expense)
+
+    let result = OnDeviceTransactionClassifier(model: nil).suggest(
+        text: "Keells supermarket groceries",
+        kind: .expense,
+        categories: [groceries, transport]
+    )
+
+    #expect(result?.categoryID == groceries.id)
+    #expect(result?.categoryName == "Groceries")
+    #expect(result?.source == .rules)
+    #expect(result?.languageCode != nil)
+}
+
+@Test func classifierFeedbackStoresOnlyCorrections() {
+    OnDeviceClassifierFeedback.clear()
+    let groceries = FinanceCategory(name: "Groceries", kind: .expense)
+    let transport = FinanceCategory(name: "Transport", kind: .expense)
+    let suggestion = OnDeviceClassificationResult(
+        categoryID: groceries.id,
+        categoryName: groceries.name,
+        confidence: 0.7,
+        languageCode: "en",
+        source: .rules
+    )
+
+    OnDeviceClassifierFeedback.record(text: "taxi ride", suggestion: suggestion, chosenCategory: transport)
+    #expect(OnDeviceClassifierFeedback.load().count == 1)
+    #expect(OnDeviceClassifierFeedback.load().first?.chosenCategory == "Transport")
+
+    OnDeviceClassifierFeedback.record(text: "groceries", suggestion: suggestion, chosenCategory: groceries)
+    #expect(OnDeviceClassifierFeedback.load().count == 1)
+    OnDeviceClassifierFeedback.clear()
+}

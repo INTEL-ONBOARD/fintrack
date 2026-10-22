@@ -21,6 +21,8 @@ struct TransactionEditorView: View {
     @State private var transactionLocationName: String?
     @State private var showingLocationPicker = false
     @State private var errorMessage: String?
+    @State private var categorySuggestion: OnDeviceClassificationResult?
+    @State private var suggestionText = ""
 
     init(transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false, reviewWarning: String? = nil) {
         original = transaction
@@ -61,7 +63,6 @@ struct TransactionEditorView: View {
                             Text(option.title).tag(option)
                         }
                     }
-                    .onChange(of: kind) { _, _ in categoryID = nil }
                     TextField("Amount in LKR", text: $amountText)
                         .keyboardType(.decimalPad)
                         .accessibilityLabel("Amount in Sri Lankan rupees")
@@ -73,6 +74,24 @@ struct TransactionEditorView: View {
                     }
                     TextField("Merchant / Person", text: $merchant)
                     DatePicker("Date & time", selection: $occurredAt)
+                }
+
+                if let categorySuggestion, categoryID == nil {
+                    Section("On-device suggestion") {
+                        HStack {
+                            Label(categorySuggestion.categoryName, systemImage: "sparkles")
+                            Spacer()
+                            Text("\(Int(categorySuggestion.confidence * 100))%")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Text("This suggestion was made on the device from the merchant and notes.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Button("Use \(categorySuggestion.categoryName)") {
+                            categoryID = categorySuggestion.categoryID
+                        }
+                    }
                 }
 
                 Section("Details") {
@@ -112,6 +131,26 @@ struct TransactionEditorView: View {
             .sheet(isPresented: $showingLocationPicker) {
                 LocationPickerView(coordinate: $transactionCoordinate, locationName: $transactionLocationName)
             }
+            .onAppear { updateCategorySuggestion() }
+            .onChange(of: merchant) { _, _ in updateCategorySuggestion() }
+            .onChange(of: note) { _, _ in updateCategorySuggestion() }
+            .onChange(of: kind) { _, _ in
+                categoryID = nil
+                updateCategorySuggestion()
+            }
+            .onChange(of: categoryID) { _, value in
+                if let suggestion = categorySuggestion,
+                   let value,
+                   let chosenCategory = store.categories.first(where: { $0.id == value }) {
+                    OnDeviceClassifierFeedback.record(
+                        text: suggestionText,
+                        suggestion: suggestion,
+                        chosenCategory: chosenCategory
+                    )
+                }
+                if value != nil { categorySuggestion = nil }
+                else { updateCategorySuggestion() }
+            }
             .alert("Unable to save", isPresented: Binding(
                 get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
             )) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }
@@ -120,6 +159,19 @@ struct TransactionEditorView: View {
 
     private var availableCategories: [FinanceCategory] {
         store.categories.filter { $0.kind == (kind.isInflow ? .income : .expense) }
+    }
+
+    private func updateCategorySuggestion() {
+        guard categoryID == nil else {
+            categorySuggestion = nil
+            return
+        }
+        suggestionText = "\(merchant) \(note)"
+        categorySuggestion = OnDeviceTransactionClassifier().suggest(
+            text: suggestionText,
+            kind: kind,
+            categories: availableCategories
+        )
     }
 
     private func save() {
