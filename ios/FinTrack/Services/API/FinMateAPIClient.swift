@@ -74,6 +74,21 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/auth/reset-password", method: "POST", body: body)
     }
 
+    func uploadAvatar(dataURI: String, accessToken: String) async throws -> AvatarResponse {
+        let body = try JSONEncoder().encode(AvatarRequest(avatar: dataURI))
+        return try await send(path: "/api/user/avatar", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func setMonthlyEmailPreference(optIn: Bool, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(MonthlyEmailRequest(optIn: optIn))
+        let _: APIStatusResponse = try await send(path: "/api/email/monthly-opt-in", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func unsubscribeEmail(token: String?) async throws {
+        let queryItems = token.map { [URLQueryItem(name: "token", value: $0)] } ?? []
+        let _: APIStatusResponse = try await send(path: "/api/email/unsubscribe", method: "GET", queryItems: queryItems)
+    }
+
     func refresh(refreshToken: String) async throws -> RefreshResponse {
         let body = try JSONEncoder().encode(RefreshRequest(refreshToken: refreshToken))
         return try await send(path: "/api/auth/refresh", method: "POST", body: body)
@@ -405,6 +420,19 @@ struct EmailRequest: Encodable {
 struct ResetPasswordRequest: Encodable {
     let token: String
     let newPassword: String
+}
+
+struct AvatarRequest: Encodable {
+    let avatar: String
+}
+
+struct AvatarResponse: Decodable {
+    let ok: Bool
+    let avatar: String
+}
+
+struct MonthlyEmailRequest: Encodable {
+    let optIn: Bool
 }
 
 struct RefreshRequest: Encodable {

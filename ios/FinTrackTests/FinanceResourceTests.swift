@@ -169,3 +169,20 @@ import Testing
     #expect(response.sessionId == "session-1")
     #expect(response.user.email == "alex@example.com")
 }
+
+@Test func profileExtraRequestsUseExpectedFields() throws {
+    let avatarData = try JSONEncoder().encode(AvatarRequest(avatar: "data:image/png;base64,abc"))
+    let emailData = try JSONEncoder().encode(MonthlyEmailRequest(optIn: false))
+    let avatar = try #require(try JSONSerialization.jsonObject(with: avatarData) as? [String: String])
+    let email = try #require(try JSONSerialization.jsonObject(with: emailData) as? [String: Bool])
+
+    #expect(avatar["avatar"] == "data:image/png;base64,abc")
+    #expect(email["optIn"] == false)
+}
+
+@Test func avatarResponseDecodesSavedDataUri() throws {
+    let data = Data("{\"ok\":true,\"avatar\":\"data:image/png;base64,abc\"}".utf8)
+    let response = try JSONDecoder().decode(AvatarResponse.self, from: data)
+    #expect(response.ok)
+    #expect(response.avatar.hasPrefix("data:image/png"))
+}

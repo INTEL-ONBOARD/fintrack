@@ -80,6 +80,18 @@ final class AuthSession: ObservableObject {
         clearSession()
     }
 
+    func uploadAvatar(dataURI: String) async throws {
+        guard let accessToken, let user else { return }
+        let response = try await api.uploadAvatar(dataURI: dataURI, accessToken: accessToken)
+        self.user = AuthUser(id: user.id, name: user.name, email: user.email, avatar: response.avatar)
+        try saveUser(self.user)
+    }
+
+    func setMonthlyEmailPreference(optIn: Bool) async throws {
+        guard let accessToken else { return }
+        try await api.setMonthlyEmailPreference(optIn: optIn, accessToken: accessToken)
+    }
+
     func logout() async {
         if let accessToken {
             try? await api.logout(accessToken: accessToken)
@@ -103,18 +115,23 @@ final class AuthSession: ObservableObject {
     }
 
     private func saveSession(_ response: AuthResponse) throws {
-        let userData = try JSONEncoder().encode(response.user)
-        guard let userText = String(data: userData, encoding: .utf8) else {
-            throw KeychainError.saveFailed
-        }
         try keychain.save(response.accessToken, for: "accessToken")
         try keychain.save(response.refreshToken, for: "refreshToken")
-        try keychain.save(userText, for: "user")
+        try saveUser(response.user)
         accessToken = response.accessToken
         refreshToken = response.refreshToken
         user = response.user
         currentSessionID = response.sessionId
         isAuthenticated = true
+    }
+
+    private func saveUser(_ user: AuthUser?) throws {
+        guard let user,
+              let userData = try? JSONEncoder().encode(user),
+              let userText = String(data: userData, encoding: .utf8) else {
+            throw KeychainError.saveFailed
+        }
+        try keychain.save(userText, for: "user")
     }
 
     private func clearSession() {
