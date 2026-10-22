@@ -59,9 +59,7 @@ private struct FinTrackRootView: View {
         }
         .task(id: auth.isAuthenticated) {
             guard auth.isAuthenticated, let token = auth.token() else { return }
-            await store.syncTransactions(accessToken: token)
-            await store.syncResources(accessToken: token)
-            await store.syncSettings(accessToken: token)
+            await store.syncAll(accessToken: token)
         }
         .task(id: auth.isAuthenticated) {
             guard auth.isAuthenticated, let token = auth.token() else {

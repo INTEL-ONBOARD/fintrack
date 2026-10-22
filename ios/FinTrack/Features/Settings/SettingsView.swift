@@ -2,6 +2,7 @@ import LocalAuthentication
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject private var store: FinanceStore
     @EnvironmentObject private var auth: AuthSession
     @AppStorage("biometricLockEnabled") private var deviceLockEnabled = false
     @State private var errorMessage: String?
@@ -12,6 +13,20 @@ struct SettingsView: View {
             Section("Account") {
                 if let user = auth.user {
                     Label(user.email, systemImage: "person.crop.circle")
+                    if store.isSyncingAll {
+                        ProgressView("Syncing finance data…")
+                    } else if let lastSyncAt = store.lastSyncAt {
+                        Text("Last synced \(lastSyncAt.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if store.pendingTransactionCount + store.pendingResourceCount > 0 {
+                        Text("Some offline changes are waiting to sync.")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
+                    Button("Sync now", systemImage: "arrow.clockwise") {
+                        guard let token = auth.token() else { return }
+                        Task { await store.syncAll(accessToken: token) }
+                    }
                     NavigationLink { ProfileSettingsView() } label: {
                         Label("Profile settings", systemImage: "slider.horizontal.3")
                     }

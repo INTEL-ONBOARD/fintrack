@@ -35,6 +35,8 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var settings: FinanceUserSettings
     @Published private(set) var isSyncingTransactions = false
     @Published private(set) var isSyncingResources = false
+    @Published private(set) var isSyncingAll = false
+    @Published private(set) var lastSyncAt: Date?
     @Published var errorMessage: String?
 
     var pendingTransactionCount: Int {
@@ -59,6 +61,7 @@ final class FinanceStore: ObservableObject {
         } else {
             settings = FinanceUserSettings()
         }
+        lastSyncAt = UserDefaults.standard.object(forKey: "financeLastSyncAt") as? Date
         do {
             try seedCategoriesIfNeeded()
             try reload()
@@ -179,6 +182,19 @@ final class FinanceStore: ObservableObject {
         } catch {
             errorMessage = "Transaction sync failed: \(error.localizedDescription)"
         }
+    }
+
+    func syncAll(accessToken: String) async {
+        guard !isSyncingAll else { return }
+        isSyncingAll = true
+        errorMessage = nil
+        defer { isSyncingAll = false }
+        await syncTransactions(accessToken: accessToken)
+        await syncResources(accessToken: accessToken)
+        await syncSettings(accessToken: accessToken)
+        guard errorMessage == nil else { return }
+        lastSyncAt = .now
+        UserDefaults.standard.set(lastSyncAt, forKey: "financeLastSyncAt")
     }
 
     func retryPendingTransactions(accessToken: String) async {
