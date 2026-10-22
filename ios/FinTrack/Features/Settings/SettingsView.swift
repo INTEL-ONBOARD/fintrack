@@ -2,11 +2,55 @@ import LocalAuthentication
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @AppStorage("biometricLockEnabled") private var deviceLockEnabled = false
     @State private var errorMessage: String?
+    @State private var showingAuth = false
 
     var body: some View {
         List {
+            Section("Account") {
+                if let user = auth.user {
+                    Label(user.email, systemImage: "person.crop.circle")
+                    if store.isSyncingAll {
+                        ProgressView("Syncing finance data…")
+                    } else if let lastSyncAt = store.lastSyncAt {
+                        Text("Last synced \(lastSyncAt.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if store.pendingTransactionCount + store.pendingResourceCount > 0 {
+                        Text("Some offline changes are waiting to sync.")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
+                    Button("Sync now", systemImage: "arrow.clockwise") {
+                        guard let token = auth.token() else { return }
+                        Task { await store.syncAll(accessToken: token) }
+                    }
+                    NavigationLink { ProfileSettingsView() } label: {
+                        Label("Profile settings", systemImage: "slider.horizontal.3")
+                    }
+                    NavigationLink { SessionsView() } label: {
+                        Label("Active sessions", systemImage: "lock.shield")
+                    }
+                    NavigationLink { ChatView() } label: {
+                        Label("Chat", systemImage: "message")
+                    }
+                    Button("Sign out", role: .destructive) {
+                        Task { await auth.logout() }
+                    }
+                } else {
+                    Button {
+                        showingAuth = true
+                    } label: {
+                        Label("Sign in to sync", systemImage: "person.crop.circle.badge.plus")
+                    }
+                    Text("Use your FinMate account when you are ready to connect online data.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Your data") {
                 NavigationLink { CategoriesView() } label: {
                     Label("Categories", systemImage: "square.grid.2x2")
@@ -14,8 +58,23 @@ struct SettingsView: View {
                 NavigationLink { BudgetsView() } label: {
                     Label("Budgets", systemImage: "chart.pie")
                 }
+                NavigationLink { AccountsView() } label: {
+                    Label("Accounts", systemImage: "building.columns")
+                }
+                NavigationLink { GoalsView() } label: {
+                    Label("Goals", systemImage: "target")
+                }
+                NavigationLink { BillsView() } label: {
+                    Label("Bills", systemImage: "calendar.badge.clock")
+                }
+                NavigationLink { NotificationsView() } label: {
+                    Label("Notifications", systemImage: "bell")
+                }
                 NavigationLink { ImportView() } label: {
                     Label("Import message or receipt", systemImage: "square.and.arrow.down")
+                }
+                NavigationLink { DataManagementView() } label: {
+                    Label("Data management", systemImage: "externaldrive.badge.icloud")
                 }
             }
 
@@ -37,12 +96,13 @@ struct SettingsView: View {
                 )) {
                     Label("Require device unlock", systemImage: "lock.shield")
                 }
-                Text("Your transactions are stored on this device. Online sync is not connected yet.")
+                Text("Your finance data is stored on this device and syncs when you sign in.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
         }
         .navigationTitle("Settings")
+        .sheet(isPresented: $showingAuth) { AuthView() }
         .alert("Device lock", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
         )) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }

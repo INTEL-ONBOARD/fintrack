@@ -4,18 +4,25 @@ import SwiftUI
 @main
 struct FinTrackApp: App {
     @StateObject private var store = FinanceStore()
+    @StateObject private var auth = AuthSession()
+    @StateObject private var realtime = RealtimeSyncService()
 
     var body: some Scene {
         WindowGroup {
             FinTrackRootView()
                 .environmentObject(store)
+                .environmentObject(auth)
+                .environmentObject(realtime)
                 .tint(FinTrackStyle.purple)
+                .task { await auth.restore() }
         }
     }
 }
 
 private struct FinTrackRootView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
+    @EnvironmentObject private var realtime: RealtimeSyncService
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
     @AppStorage("biometricLockEnabled") private var deviceLockEnabled = false
@@ -25,6 +32,7 @@ private struct FinTrackRootView: View {
     @State private var reviewWarning: String?
     @State private var pendingShortcut: PendingShortcutDraft?
     @State private var linkMessage: String?
+    @State private var showingAuth = false
 
     var body: some View {
         Group {
@@ -45,14 +53,47 @@ private struct FinTrackRootView: View {
                 isLocked = true
             }
             if phase == .active && isLocked { Task { await unlock() } }
+            if phase == .active {
+                Task { await scheduleLocalSummaryNotification() }
+            }
         }
         .task {
             if deviceLockEnabled { isLocked = true; await unlock() }
+            await scheduleLocalSummaryNotification()
+        }
+        .task(id: auth.isAuthenticated) {
+            guard auth.isAuthenticated, let token = auth.token() else { return }
+            await store.syncAll(accessToken: token)
+        }
+        .task(id: auth.isAuthenticated) {
+            guard auth.isAuthenticated, let token = auth.token() else {
+                realtime.stop()
+                return
+            }
+            for await event in realtime.stream(accessToken: token) {
+                switch event {
+                case .transactions:
+                    await store.syncTransactions(accessToken: token)
+                case .settings:
+                    await store.syncSettings(accessToken: token)
+                case .goals, .bills, .accounts, .notifications:
+                    await store.syncResources(accessToken: token)
+                case .unknown:
+                    break
+                }
+            }
         }
         .onOpenURL(perform: handleShortcutURL)
+        .onChange(of: auth.isAuthenticated) { _, authenticated in
+            if authenticated { hasSeenWelcome = true }
+        }
+        .onChange(of: store.transactions) { _, _ in
+            Task { await scheduleLocalSummaryNotification() }
+        }
         .onChange(of: isLocked) { _, locked in
             if !locked { presentPendingShortcutIfReady() }
         }
+        .sheet(isPresented: $showingAuth) { AuthView() }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: reviewWarning)
         }
@@ -78,13 +119,16 @@ private struct FinTrackRootView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 32)
             Spacer()
-            Button("Get Started") {
+            Button("Sign in to sync") {
+                showingAuth = true
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .padding(.horizontal, 24)
+            Button("Continue offline") {
                 hasSeenWelcome = true
                 presentPendingShortcutIfReady()
             }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, 24)
-                .padding(.bottom, 30)
+            .padding(.bottom, 30)
         }
         .background(FinTrackStyle.background)
     }
@@ -144,6 +188,15 @@ private struct FinTrackRootView: View {
         reviewWarning = pendingShortcut.reviewWarning
         reviewDraft = pendingShortcut.transaction
         self.pendingShortcut = nil
+    }
+
+    private func scheduleLocalSummaryNotification() async {
+        await LocalSummaryNotificationScheduler.scheduleCurrentMonthSummary(
+            transactions: store.transactions,
+            categories: store.categories,
+            budgets: store.budgets,
+            currency: store.settings.currency
+        )
     }
 }
 

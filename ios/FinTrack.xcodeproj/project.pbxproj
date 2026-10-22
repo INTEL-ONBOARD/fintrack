@@ -8,35 +8,53 @@
 
 /* Begin PBXBuildFile section */
 		0572EE1A76461FB3C7830D89 /* SpendingMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC4C5FC5F8B32FD24060894 /* SpendingMapView.swift */; };
+		10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A829F4145384C74516E1B5 /* PasswordChangeView.swift */; };
 		24EDA3003E7D4616DB8FBCD8 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51AA410FD8BFBE52979C792B /* TransactionsView.swift */; };
+		2D940425207D4FD330FC7A23 /* BillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673364D9956087DBB0FDE6F8 /* BillsView.swift */; };
+		2F1ED60E0014ED1B97B955F0 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53A0505EA084F7EDE6F58AF /* AuthSession.swift */; };
+		3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */; };
+		34E5F03E0DFDB83AF92BAF76 /* FinanceResourceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */; };
 		48E1787FD942F32F5E71F5B4 /* ReceiptParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC556C3F1B44AAE47920176A /* ReceiptParserTests.swift */; };
+		4A106A3CE0CA9BA88DA5ABE0 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C53B1E6B341A54D0DFA5695D /* ChatView.swift */; };
 		4D62D952C5AA2FF08474DC70 /* FinanceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F051E32D42D5538497FBB3C7 /* FinanceStoreTests.swift */; };
 		4E769FD8F55FE11868747F5A /* FinTrackShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEE08E0E513FCD473E3B3FC /* FinTrackShortcuts.swift */; };
+		50EAD14030CA32513DA2D1BE /* FinanceResourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DDA91BC41EE03D86893BF6A /* FinanceResourceTests.swift */; };
 		5381754AA15757F49087E520 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74216995DF970B2926DB0E80 /* SettingsView.swift */; };
 		55B2F7E250DB287D6A0670A8 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B1239E54B176CC61F19632B /* ImportView.swift */; };
 		60134E7C6726A4CB6D2C1D04 /* FinTrackStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */; };
+		60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267E91516178A839C36A5747 /* DataManagementView.swift */; };
 		632FF0C5EA5F7117D7A418B9 /* ReceiptParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38BD406C768E66ECE443A905 /* ReceiptParser.swift */; };
 		638727E0257C3EB7C62ADA22 /* ReceiptTextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA06478A7CFCF5041E5A2A49 /* ReceiptTextRecognizer.swift */; };
+		67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABBF984F6B06DA88D41501 /* SessionsView.swift */; };
 		6CAF7589F219EBA4D433C4E6 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E81D1C30CBDB993925EBF2 /* PersistenceController.swift */; };
+		762B7E4C17DE1A7C64F42D66 /* FinMateAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */; };
+		78906420A7FBBF9305F8E404 /* AccountRecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */; };
 		7E52052BB5C228E5339B9C13 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698F04BA04EF9E8BBDF53C35 /* ReportsView.swift */; };
 		7EBDAD769C4FF36A92B8DACD /* ShortcutDraftInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BCD5C5487F8E333D3029248 /* ShortcutDraftInbox.swift */; };
 		7FB945E061B809497EEF149E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
+		8628051264ACCE8EF5AD296B /* RealtimeSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */; };
 		89F11AE5A772B89DA8BCD56D /* FinancialMessageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA15FE061574C064450FB01 /* FinancialMessageParserTests.swift */; };
 		94270EF92E8D8EEFEC4FBD16 /* CategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D960BAEBB5801DDEB6DFAAA /* CategoriesView.swift */; };
 		98178B5F9424291C773060F9 /* FinTrackApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41289CC5F5655AC8D7258765 /* FinTrackApp.swift */; };
+		9E7F1E72876F74EEF6FA0922 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4735B08EA168D02D5B1D7E8F /* KeychainStore.swift */; };
+		A39C9BAACC3B97321D7316E6 /* ProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AD1EB21D07521ACE8FA52B9 /* ProfileSettingsView.swift */; };
 		A57CCA862BC3560B2015D44B /* LocationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4443536BFB99D0FAABEA8C1E /* LocationPickerView.swift */; };
 		A5F87337921D7E67298EF642 /* FinanceMathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D63B13E4EEDC2D626E5A76 /* FinanceMathTests.swift */; };
 		A862271BEDC7850CC2107437 /* FinTrack.app in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F80BEB5690EBA771516DDDA /* FinTrack.app */; };
 		B76D6EF073C2127D5E7A9A7A /* FinanceMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FD3A687D41CB809ACD2B37 /* FinanceMath.swift */; };
 		B8F9C59F2E6A5EE888385E83 /* FinanceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8BB218DFAD6507D469A2DF /* FinanceStore.swift */; };
+		B9767254DC86BF5541DF1E9A /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37E30D01BEBE0D03DCE47F8 /* AuthView.swift */; };
+		C4E84360A95051F961C35520 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CBE8B56608AD09FE81DDCFA /* GoalsView.swift */; };
 		C971BE56F1E2766EF897E68E /* FinanceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC38B8CE588D59C117BE768 /* FinanceModels.swift */; };
 		CAA3870BACCDFE6E000DCCAB /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74F5346136AE51AEC352894 /* TransactionRow.swift */; };
 		CB92700C516955C0D19FF2F8 /* ShortcutDraftInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38986A17DF3913D7DB97D5CD /* ShortcutDraftInboxTests.swift */; };
+		CE3DEBCA7A209A48054EB4B6 /* AccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2457FFCCCAA01A1EBFB9F0 /* AccountsView.swift */; };
 		D3ACC9B91C161FBD31C9D4D3 /* FinancialMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946BA33E064EFD0881E14CB5 /* FinancialMessageParser.swift */; };
 		D4813CD400514EC78B20A9D3 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473030B916A51305605DA796 /* LocationManager.swift */; };
 		D52573435D9A7B2F17CC0079 /* TransactionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6961CA827CFC01C79E998F2 /* TransactionEditorView.swift */; };
 		D6E895BCFD5996F6D0555330 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A707455BF415489BA029493 /* OverviewView.swift */; };
 		EF6EFB0076D076B46275665C /* BudgetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB83930049456B129298EE14 /* BudgetsView.swift */; };
+		F2A4D6B8C0E1F23456789ABC /* LocalSummaryNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789ABD /* LocalSummaryNotifications.swift */; };
 		F690256593F9B16BA36BA0AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -52,36 +70,54 @@
 
 /* Begin PBXFileReference section */
 		01D63B13E4EEDC2D626E5A76 /* FinanceMathTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinanceMathTests.swift; sourceTree = "<group>"; };
+		1AD1EB21D07521ACE8FA52B9 /* ProfileSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileSettingsView.swift; path = Features/Settings/ProfileSettingsView.swift; sourceTree = "<group>"; };
 		1BCD5C5487F8E333D3029248 /* ShortcutDraftInbox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ShortcutDraftInbox.swift; path = Services/Shortcuts/ShortcutDraftInbox.swift; sourceTree = "<group>"; };
+		1CBE8B56608AD09FE81DDCFA /* GoalsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = GoalsView.swift; path = Features/Goals/GoalsView.swift; sourceTree = "<group>"; };
 		1D960BAEBB5801DDEB6DFAAA /* CategoriesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CategoriesView.swift; path = Features/Settings/CategoriesView.swift; sourceTree = "<group>"; };
+		1DDA91BC41EE03D86893BF6A /* FinanceResourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinanceResourceTests.swift; sourceTree = "<group>"; };
+		1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceResourceModels.swift; path = Models/FinanceResourceModels.swift; sourceTree = "<group>"; };
+		22ABBF984F6B06DA88D41501 /* SessionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SessionsView.swift; path = Features/Settings/SessionsView.swift; sourceTree = "<group>"; };
 		25AFBCAD2C774AA9FEF63052 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		267E91516178A839C36A5747 /* DataManagementView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DataManagementView.swift; path = Features/Settings/DataManagementView.swift; sourceTree = "<group>"; };
 		28FD3A687D41CB809ACD2B37 /* FinanceMath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceMath.swift; path = Models/FinanceMath.swift; sourceTree = "<group>"; };
+		33A829F4145384C74516E1B5 /* PasswordChangeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PasswordChangeView.swift; path = Features/Auth/PasswordChangeView.swift; sourceTree = "<group>"; };
 		34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackStyle.swift; path = Design/FinTrackStyle.swift; sourceTree = "<group>"; };
 		38986A17DF3913D7DB97D5CD /* ShortcutDraftInboxTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShortcutDraftInboxTests.swift; sourceTree = "<group>"; };
 		38BD406C768E66ECE443A905 /* ReceiptParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReceiptParser.swift; path = Services/Imports/ReceiptParser.swift; sourceTree = "<group>"; };
 		41289CC5F5655AC8D7258765 /* FinTrackApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackApp.swift; path = App/FinTrackApp.swift; sourceTree = "<group>"; };
 		4443536BFB99D0FAABEA8C1E /* LocationPickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LocationPickerView.swift; path = Features/Map/LocationPickerView.swift; sourceTree = "<group>"; };
 		473030B916A51305605DA796 /* LocationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LocationManager.swift; path = Services/Location/LocationManager.swift; sourceTree = "<group>"; };
+		4735B08EA168D02D5B1D7E8F /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeychainStore.swift; path = Services/Auth/KeychainStore.swift; sourceTree = "<group>"; };
 		4F80BEB5690EBA771516DDDA /* FinTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51AA410FD8BFBE52979C792B /* TransactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionsView.swift; path = Features/Transactions/TransactionsView.swift; sourceTree = "<group>"; };
+		6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AccountRecoveryView.swift; path = Features/Auth/AccountRecoveryView.swift; sourceTree = "<group>"; };
+		673364D9956087DBB0FDE6F8 /* BillsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BillsView.swift; path = Features/Bills/BillsView.swift; sourceTree = "<group>"; };
 		698F04BA04EF9E8BBDF53C35 /* ReportsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReportsView.swift; path = Features/Reports/ReportsView.swift; sourceTree = "<group>"; };
 		6B1239E54B176CC61F19632B /* ImportView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImportView.swift; path = Features/Transactions/ImportView.swift; sourceTree = "<group>"; };
 		74216995DF970B2926DB0E80 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = Features/Settings/SettingsView.swift; sourceTree = "<group>"; };
 		7BC38B8CE588D59C117BE768 /* FinanceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceModels.swift; path = Models/FinanceModels.swift; sourceTree = "<group>"; };
 		7CA15FE061574C064450FB01 /* FinancialMessageParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinancialMessageParserTests.swift; sourceTree = "<group>"; };
+		8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RealtimeSyncService.swift; path = Services/Realtime/RealtimeSyncService.swift; sourceTree = "<group>"; };
 		946BA33E064EFD0881E14CB5 /* FinancialMessageParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinancialMessageParser.swift; path = Services/Imports/FinancialMessageParser.swift; sourceTree = "<group>"; };
 		9A707455BF415489BA029493 /* OverviewView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OverviewView.swift; path = Features/Overview/OverviewView.swift; sourceTree = "<group>"; };
 		9C8BB218DFAD6507D469A2DF /* FinanceStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceStore.swift; path = Persistence/FinanceStore.swift; sourceTree = "<group>"; };
+		AA2457FFCCCAA01A1EBFB9F0 /* AccountsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AccountsView.swift; path = Features/Accounts/AccountsView.swift; sourceTree = "<group>"; };
 		AB83930049456B129298EE14 /* BudgetsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BudgetsView.swift; path = Features/Budgets/BudgetsView.swift; sourceTree = "<group>"; };
 		B7E81D1C30CBDB993925EBF2 /* PersistenceController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PersistenceController.swift; path = Persistence/PersistenceController.swift; sourceTree = "<group>"; };
 		BC556C3F1B44AAE47920176A /* ReceiptParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiptParserTests.swift; sourceTree = "<group>"; };
 		BD10B116BBEEE17F353C3056 /* FinTrackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C53B1E6B341A54D0DFA5695D /* ChatView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ChatView.swift; path = Features/Chat/ChatView.swift; sourceTree = "<group>"; };
 		C6961CA827CFC01C79E998F2 /* TransactionEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionEditorView.swift; path = Features/Transactions/TransactionEditorView.swift; sourceTree = "<group>"; };
+		C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinMateAPIClient.swift; path = Services/API/FinMateAPIClient.swift; sourceTree = "<group>"; };
 		CDEE08E0E513FCD473E3B3FC /* FinTrackShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackShortcuts.swift; path = Services/Shortcuts/FinTrackShortcuts.swift; sourceTree = "<group>"; };
+		CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotificationsView.swift; path = Features/Notifications/NotificationsView.swift; sourceTree = "<group>"; };
+		D37E30D01BEBE0D03DCE47F8 /* AuthView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthView.swift; path = Features/Auth/AuthView.swift; sourceTree = "<group>"; };
+		D53A0505EA084F7EDE6F58AF /* AuthSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthSession.swift; path = Services/Auth/AuthSession.swift; sourceTree = "<group>"; };
 		DA06478A7CFCF5041E5A2A49 /* ReceiptTextRecognizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReceiptTextRecognizer.swift; path = Services/Imports/ReceiptTextRecognizer.swift; sourceTree = "<group>"; };
 		EEC4C5FC5F8B32FD24060894 /* SpendingMapView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SpendingMapView.swift; path = Features/Map/SpendingMapView.swift; sourceTree = "<group>"; };
 		F051E32D42D5538497FBB3C7 /* FinanceStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinanceStoreTests.swift; sourceTree = "<group>"; };
 		F74F5346136AE51AEC352894 /* TransactionRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionRow.swift; path = Features/Transactions/TransactionRow.swift; sourceTree = "<group>"; };
+		F2A4D6B8C0E1F23456789ABD /* LocalSummaryNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LocalSummaryNotifications.swift; path = Services/Notifications/LocalSummaryNotifications.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +167,23 @@
 				4443536BFB99D0FAABEA8C1E /* LocationPickerView.swift */,
 				EEC4C5FC5F8B32FD24060894 /* SpendingMapView.swift */,
 				473030B916A51305605DA796 /* LocationManager.swift */,
+				C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */,
+				4735B08EA168D02D5B1D7E8F /* KeychainStore.swift */,
+				D53A0505EA084F7EDE6F58AF /* AuthSession.swift */,
+				D37E30D01BEBE0D03DCE47F8 /* AuthView.swift */,
+				1F0C214C06F10E85ADBC10A0 /* FinanceResourceModels.swift */,
+				AA2457FFCCCAA01A1EBFB9F0 /* AccountsView.swift */,
+				1CBE8B56608AD09FE81DDCFA /* GoalsView.swift */,
+				673364D9956087DBB0FDE6F8 /* BillsView.swift */,
+				CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */,
+				1AD1EB21D07521ACE8FA52B9 /* ProfileSettingsView.swift */,
+				22ABBF984F6B06DA88D41501 /* SessionsView.swift */,
+				6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */,
+				33A829F4145384C74516E1B5 /* PasswordChangeView.swift */,
+				267E91516178A839C36A5747 /* DataManagementView.swift */,
+				C53B1E6B341A54D0DFA5695D /* ChatView.swift */,
+				8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */,
+				F2A4D6B8C0E1F23456789ABD /* LocalSummaryNotifications.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -179,6 +232,7 @@
 				7CA15FE061574C064450FB01 /* FinancialMessageParserTests.swift */,
 				BC556C3F1B44AAE47920176A /* ReceiptParserTests.swift */,
 				38986A17DF3913D7DB97D5CD /* ShortcutDraftInboxTests.swift */,
+				1DDA91BC41EE03D86893BF6A /* FinanceResourceTests.swift */,
 			);
 			name = FinTrackTests;
 			path = FinTrackTests;
@@ -297,6 +351,23 @@
 				A57CCA862BC3560B2015D44B /* LocationPickerView.swift in Sources */,
 				0572EE1A76461FB3C7830D89 /* SpendingMapView.swift in Sources */,
 				D4813CD400514EC78B20A9D3 /* LocationManager.swift in Sources */,
+				762B7E4C17DE1A7C64F42D66 /* FinMateAPIClient.swift in Sources */,
+				9E7F1E72876F74EEF6FA0922 /* KeychainStore.swift in Sources */,
+				2F1ED60E0014ED1B97B955F0 /* AuthSession.swift in Sources */,
+				B9767254DC86BF5541DF1E9A /* AuthView.swift in Sources */,
+				34E5F03E0DFDB83AF92BAF76 /* FinanceResourceModels.swift in Sources */,
+				CE3DEBCA7A209A48054EB4B6 /* AccountsView.swift in Sources */,
+				C4E84360A95051F961C35520 /* GoalsView.swift in Sources */,
+				2D940425207D4FD330FC7A23 /* BillsView.swift in Sources */,
+				3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */,
+				A39C9BAACC3B97321D7316E6 /* ProfileSettingsView.swift in Sources */,
+				67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */,
+				78906420A7FBBF9305F8E404 /* AccountRecoveryView.swift in Sources */,
+				10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */,
+				60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */,
+				4A106A3CE0CA9BA88DA5ABE0 /* ChatView.swift in Sources */,
+				8628051264ACCE8EF5AD296B /* RealtimeSyncService.swift in Sources */,
+				F2A4D6B8C0E1F23456789ABC /* LocalSummaryNotifications.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -309,6 +380,7 @@
 				89F11AE5A772B89DA8BCD56D /* FinancialMessageParserTests.swift in Sources */,
 				48E1787FD942F32F5E71F5B4 /* ReceiptParserTests.swift in Sources */,
 				CB92700C516955C0D19FF2F8 /* ShortcutDraftInboxTests.swift in Sources */,
+				50EAD14030CA32513DA2D1BE /* FinanceResourceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
