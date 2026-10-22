@@ -90,6 +90,43 @@ import Testing
     #expect(summary.notificationBody(showAmounts: false).contains("Groceries"))
 }
 
+@Test func monthlySpendingIntentIncludesTotalAndTopCategory() {
+    let summary = LocalMonthlySummary(
+        monthKey: "2026-10",
+        monthTitle: "October 2026",
+        transactionCount: 2,
+        totals: ReportTotals(incomeMinor: 100_000, expenseMinor: 18_000),
+        topCategoryName: "Groceries",
+        topCategoryMinor: 18_000,
+        budgetLimitMinor: 50_000,
+        budgetSpentMinor: 18_000,
+        currency: "LKR"
+    )
+
+    let text = FinancialSummaryIntentText.monthlySpending(for: summary)
+    #expect(text.contains("LKR"))
+    #expect(text.contains("Groceries"))
+}
+
+@Test func budgetStatusIntentHandlesRemainingAndOverBudget() {
+    let withinBudget = LocalMonthlySummary(
+        monthKey: "2026-10", monthTitle: "October 2026", transactionCount: 1,
+        totals: ReportTotals(expenseMinor: 18_000), topCategoryName: nil,
+        topCategoryMinor: 0, budgetLimitMinor: 50_000, budgetSpentMinor: 18_000,
+        currency: "LKR"
+    )
+    let overBudget = LocalMonthlySummary(
+        monthKey: "2026-10", monthTitle: "October 2026", transactionCount: 1,
+        totals: ReportTotals(expenseMinor: 60_000), topCategoryName: nil,
+        topCategoryMinor: 0, budgetLimitMinor: 50_000, budgetSpentMinor: 60_000,
+        currency: "LKR"
+    )
+
+    #expect(FinancialSummaryIntentText.budgetStatus(for: withinBudget).contains("36%"))
+    #expect(FinancialSummaryIntentText.budgetStatus(for: withinBudget).contains("LKR"))
+    #expect(FinancialSummaryIntentText.budgetStatus(for: overBudget).contains("over the limit"))
+}
+
 @Test func onDeviceClassifierSuggestsCategoryFromMerchantText() {
     let groceries = FinanceCategory(name: "Groceries", kind: .expense)
     let transport = FinanceCategory(name: "Transport", kind: .expense)

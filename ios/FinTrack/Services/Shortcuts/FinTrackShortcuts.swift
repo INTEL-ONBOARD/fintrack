@@ -150,5 +150,17 @@ struct FinTrackAppShortcuts: AppShortcutsProvider {
             shortTitle: "Add Income",
             systemImageName: "plus.circle"
         )
+        AppShortcut(
+            intent: MonthlySpendingIntent(),
+            phrases: ["How much did I spend this month in \(.applicationName)"],
+            shortTitle: "Monthly Spending",
+            systemImageName: "chart.bar"
+        )
+        AppShortcut(
+            intent: BudgetStatusIntent(),
+            phrases: ["What is my budget status in \(.applicationName)"],
+            shortTitle: "Budget Status",
+            systemImageName: "chart.pie"
+        )
     }
 }
