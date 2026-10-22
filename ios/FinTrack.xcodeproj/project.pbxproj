@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0572EE1A76461FB3C7830D89 /* SpendingMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC4C5FC5F8B32FD24060894 /* SpendingMapView.swift */; };
+		10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A829F4145384C74516E1B5 /* PasswordChangeView.swift */; };
 		24EDA3003E7D4616DB8FBCD8 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51AA410FD8BFBE52979C792B /* TransactionsView.swift */; };
 		2D940425207D4FD330FC7A23 /* BillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673364D9956087DBB0FDE6F8 /* BillsView.swift */; };
 		2F1ED60E0014ED1B97B955F0 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53A0505EA084F7EDE6F58AF /* AuthSession.swift */; };
@@ -25,6 +26,7 @@
 		67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABBF984F6B06DA88D41501 /* SessionsView.swift */; };
 		6CAF7589F219EBA4D433C4E6 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E81D1C30CBDB993925EBF2 /* PersistenceController.swift */; };
 		762B7E4C17DE1A7C64F42D66 /* FinMateAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92877EBC9EDCD7E1DDDC360 /* FinMateAPIClient.swift */; };
+		78906420A7FBBF9305F8E404 /* AccountRecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */; };
 		7E52052BB5C228E5339B9C13 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698F04BA04EF9E8BBDF53C35 /* ReportsView.swift */; };
 		7EBDAD769C4FF36A92B8DACD /* ShortcutDraftInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BCD5C5487F8E333D3029248 /* ShortcutDraftInbox.swift */; };
 		7FB945E061B809497EEF149E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
@@ -73,6 +75,7 @@
 		22ABBF984F6B06DA88D41501 /* SessionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SessionsView.swift; path = Features/Settings/SessionsView.swift; sourceTree = "<group>"; };
 		25AFBCAD2C774AA9FEF63052 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		28FD3A687D41CB809ACD2B37 /* FinanceMath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinanceMath.swift; path = Models/FinanceMath.swift; sourceTree = "<group>"; };
+		33A829F4145384C74516E1B5 /* PasswordChangeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PasswordChangeView.swift; path = Features/Auth/PasswordChangeView.swift; sourceTree = "<group>"; };
 		34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinTrackStyle.swift; path = Design/FinTrackStyle.swift; sourceTree = "<group>"; };
 		38986A17DF3913D7DB97D5CD /* ShortcutDraftInboxTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShortcutDraftInboxTests.swift; sourceTree = "<group>"; };
 		38BD406C768E66ECE443A905 /* ReceiptParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReceiptParser.swift; path = Services/Imports/ReceiptParser.swift; sourceTree = "<group>"; };
@@ -82,6 +85,7 @@
 		4735B08EA168D02D5B1D7E8F /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeychainStore.swift; path = Services/Auth/KeychainStore.swift; sourceTree = "<group>"; };
 		4F80BEB5690EBA771516DDDA /* FinTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51AA410FD8BFBE52979C792B /* TransactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionsView.swift; path = Features/Transactions/TransactionsView.swift; sourceTree = "<group>"; };
+		6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AccountRecoveryView.swift; path = Features/Auth/AccountRecoveryView.swift; sourceTree = "<group>"; };
 		673364D9956087DBB0FDE6F8 /* BillsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BillsView.swift; path = Features/Bills/BillsView.swift; sourceTree = "<group>"; };
 		698F04BA04EF9E8BBDF53C35 /* ReportsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReportsView.swift; path = Features/Reports/ReportsView.swift; sourceTree = "<group>"; };
 		6B1239E54B176CC61F19632B /* ImportView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ImportView.swift; path = Features/Transactions/ImportView.swift; sourceTree = "<group>"; };
@@ -166,6 +170,8 @@
 				CE62FA877F2F7C40BA4D2B97 /* NotificationsView.swift */,
 				1AD1EB21D07521ACE8FA52B9 /* ProfileSettingsView.swift */,
 				22ABBF984F6B06DA88D41501 /* SessionsView.swift */,
+				6534256AEEF47FC7EABF0B3D /* AccountRecoveryView.swift */,
+				33A829F4145384C74516E1B5 /* PasswordChangeView.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -344,6 +350,8 @@
 				3314D945BB55CDE9ED286142 /* NotificationsView.swift in Sources */,
 				A39C9BAACC3B97321D7316E6 /* ProfileSettingsView.swift in Sources */,
 				67BA4F08595BA666C3164BFD /* SessionsView.swift in Sources */,
+				78906420A7FBBF9305F8E404 /* AccountRecoveryView.swift in Sources */,
+				10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

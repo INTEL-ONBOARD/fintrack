@@ -10,6 +10,7 @@ struct AuthView: View {
     @State private var password = ""
     @State private var message: String?
     @State private var errorMessage: String?
+    @State private var showingRecovery = false
 
     var body: some View {
         NavigationStack {
@@ -49,6 +50,11 @@ struct AuthView: View {
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(auth.isLoading)
 
+                    if !isRegistering {
+                        Button("Forgot password or need email verification?") { showingRecovery = true }
+                            .font(.footnote)
+                    }
+
                     if auth.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity)
@@ -75,6 +81,7 @@ struct AuthView: View {
             .onChange(of: auth.isAuthenticated) { _, authenticated in
                 if authenticated { dismiss() }
             }
+            .sheet(isPresented: $showingRecovery) { AccountRecoveryView() }
         }
     }
 

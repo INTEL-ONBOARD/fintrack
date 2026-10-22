@@ -27,6 +27,9 @@ struct ProfileSettingsView: View {
                 Toggle("Monthly summary", isOn: $monthlySummary)
                 Toggle("General alerts", isOn: $generalAlerts)
             }
+            NavigationLink { PasswordChangeView() } label: {
+                Label("Change password", systemImage: "key")
+            }
             Button("Save Settings") { save() }
                 .buttonStyle(PrimaryButtonStyle())
                 .listRowInsets(EdgeInsets())

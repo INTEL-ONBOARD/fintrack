@@ -41,6 +41,39 @@ struct FinMateAPIClient {
         return try await send(path: "/api/auth/register", method: "POST", body: body)
     }
 
+    func checkEmailExists(email: String) async throws -> Bool {
+        let response: EmailExistsResponse = try await send(
+            path: "/api/auth/exists", method: "GET",
+            queryItems: [URLQueryItem(name: "email", value: email)]
+        )
+        return response.exists
+    }
+
+    func changePassword(oldPassword: String, newPassword: String, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(ChangePasswordRequest(oldPassword: oldPassword, newPassword: newPassword))
+        let _: APIStatusResponse = try await send(path: "/api/auth/change-password", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func verifyEmail(token: String) async throws -> AuthResponse {
+        let body = try JSONEncoder().encode(TokenRequest(token: token))
+        return try await send(path: "/api/auth/verify", method: "POST", body: body)
+    }
+
+    func resendVerification(email: String) async throws {
+        let body = try JSONEncoder().encode(EmailRequest(email: email))
+        let _: APIStatusResponse = try await send(path: "/api/auth/resend-verification", method: "POST", body: body)
+    }
+
+    func requestPasswordReset(email: String) async throws {
+        let body = try JSONEncoder().encode(EmailRequest(email: email))
+        let _: APIStatusResponse = try await send(path: "/api/auth/forgot-password", method: "POST", body: body)
+    }
+
+    func resetPassword(token: String, newPassword: String) async throws {
+        let body = try JSONEncoder().encode(ResetPasswordRequest(token: token, newPassword: newPassword))
+        let _: APIStatusResponse = try await send(path: "/api/auth/reset-password", method: "POST", body: body)
+    }
+
     func refresh(refreshToken: String) async throws -> RefreshResponse {
         let body = try JSONEncoder().encode(RefreshRequest(refreshToken: refreshToken))
         return try await send(path: "/api/auth/refresh", method: "POST", body: body)
@@ -350,6 +383,28 @@ struct RegisterRequest: Encodable {
     let name: String
     let email: String
     let password: String
+}
+
+struct EmailExistsResponse: Decodable {
+    let exists: Bool
+}
+
+struct ChangePasswordRequest: Encodable {
+    let oldPassword: String
+    let newPassword: String
+}
+
+struct TokenRequest: Encodable {
+    let token: String
+}
+
+struct EmailRequest: Encodable {
+    let email: String
+}
+
+struct ResetPasswordRequest: Encodable {
+    let token: String
+    let newPassword: String
 }
 
 struct RefreshRequest: Encodable {

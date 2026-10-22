@@ -53,6 +53,33 @@ final class AuthSession: ObservableObject {
         return response.status
     }
 
+    func checkEmailExists(_ email: String) async throws -> Bool {
+        try await api.checkEmailExists(email: email)
+    }
+
+    func changePassword(oldPassword: String, newPassword: String) async throws {
+        guard let accessToken else { return }
+        try await api.changePassword(oldPassword: oldPassword, newPassword: newPassword, accessToken: accessToken)
+    }
+
+    func verifyEmail(token: String) async throws {
+        let response = try await api.verifyEmail(token: token)
+        try saveSession(response)
+    }
+
+    func resendVerification(email: String) async throws {
+        try await api.resendVerification(email: email)
+    }
+
+    func requestPasswordReset(email: String) async throws {
+        try await api.requestPasswordReset(email: email)
+    }
+
+    func resetPassword(token: String, newPassword: String) async throws {
+        try await api.resetPassword(token: token, newPassword: newPassword)
+        clearSession()
+    }
+
     func logout() async {
         if let accessToken {
             try? await api.logout(accessToken: accessToken)

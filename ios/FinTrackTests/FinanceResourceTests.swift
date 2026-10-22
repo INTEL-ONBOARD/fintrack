@@ -146,3 +146,26 @@ import Testing
     #expect(text.contains("Checking"))
     #expect(text.contains("date,name"))
 }
+
+@Test func accountSecurityRequestsUseExpectedApiKeys() throws {
+    let changeData = try JSONEncoder().encode(ChangePasswordRequest(oldPassword: "old-pass", newPassword: "new-pass-123"))
+    let resetData = try JSONEncoder().encode(ResetPasswordRequest(token: "reset-token", newPassword: "new-pass-123"))
+    let emailData = try JSONEncoder().encode(EmailRequest(email: "alex@example.com"))
+
+    let change = try #require(try JSONSerialization.jsonObject(with: changeData) as? [String: String])
+    let reset = try #require(try JSONSerialization.jsonObject(with: resetData) as? [String: String])
+    let email = try #require(try JSONSerialization.jsonObject(with: emailData) as? [String: String])
+    #expect(change["oldPassword"] == "old-pass")
+    #expect(change["newPassword"] == "new-pass-123")
+    #expect(reset["token"] == "reset-token")
+    #expect(email["email"] == "alex@example.com")
+}
+
+@Test func authResponseDecodesVerificationSession() throws {
+    let data = Data("""
+    {"user":{"id":"u_1","name":"Alex","email":"alex@example.com","avatar":null},"sessionId":"session-1","accessToken":"access","refreshToken":"refresh"}
+    """.utf8)
+    let response = try JSONDecoder().decode(AuthResponse.self, from: data)
+    #expect(response.sessionId == "session-1")
+    #expect(response.user.email == "alex@example.com")
+}
