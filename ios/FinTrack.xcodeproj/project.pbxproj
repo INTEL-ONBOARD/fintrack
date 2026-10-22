@@ -54,6 +54,7 @@
 		D52573435D9A7B2F17CC0079 /* TransactionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6961CA827CFC01C79E998F2 /* TransactionEditorView.swift */; };
 		D6E895BCFD5996F6D0555330 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A707455BF415489BA029493 /* OverviewView.swift */; };
 		EF6EFB0076D076B46275665C /* BudgetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB83930049456B129298EE14 /* BudgetsView.swift */; };
+		F2A4D6B8C0E1F23456789ABC /* LocalSummaryNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789ABD /* LocalSummaryNotifications.swift */; };
 		F690256593F9B16BA36BA0AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -116,6 +117,7 @@
 		EEC4C5FC5F8B32FD24060894 /* SpendingMapView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SpendingMapView.swift; path = Features/Map/SpendingMapView.swift; sourceTree = "<group>"; };
 		F051E32D42D5538497FBB3C7 /* FinanceStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinanceStoreTests.swift; sourceTree = "<group>"; };
 		F74F5346136AE51AEC352894 /* TransactionRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TransactionRow.swift; path = Features/Transactions/TransactionRow.swift; sourceTree = "<group>"; };
+		F2A4D6B8C0E1F23456789ABD /* LocalSummaryNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LocalSummaryNotifications.swift; path = Services/Notifications/LocalSummaryNotifications.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -181,6 +183,7 @@
 				267E91516178A839C36A5747 /* DataManagementView.swift */,
 				C53B1E6B341A54D0DFA5695D /* ChatView.swift */,
 				8B7FC6E537A51C586CD4C548 /* RealtimeSyncService.swift */,
+				F2A4D6B8C0E1F23456789ABD /* LocalSummaryNotifications.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -364,6 +367,7 @@
 				60B9521A5B6079B222993B72 /* DataManagementView.swift in Sources */,
 				4A106A3CE0CA9BA88DA5ABE0 /* ChatView.swift in Sources */,
 				8628051264ACCE8EF5AD296B /* RealtimeSyncService.swift in Sources */,
+				F2A4D6B8C0E1F23456789ABC /* LocalSummaryNotifications.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

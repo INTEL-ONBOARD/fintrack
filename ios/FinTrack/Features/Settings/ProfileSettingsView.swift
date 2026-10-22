@@ -6,6 +6,8 @@ struct ProfileSettingsView: View {
     @EnvironmentObject private var auth: AuthSession
     @EnvironmentObject private var store: FinanceStore
     @AppStorage("monthlyEmailOptIn") private var monthlyEmailOptIn = true
+    @AppStorage(LocalSummaryNotificationScheduler.enabledKey) private var localSummaryNotificationsEnabled = false
+    @AppStorage(LocalSummaryNotificationScheduler.showAmountsKey) private var localSummaryNotificationShowAmounts = true
     @State private var name = ""
     @State private var email = ""
     @State private var currency = "LKR"
@@ -38,6 +40,13 @@ struct ProfileSettingsView: View {
             Section("Email") {
                 Toggle("Monthly email summary", isOn: $monthlyEmailOptIn)
                 Text("You can unsubscribe from a monthly email using the link inside that email.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            Section("On-device summary") {
+                Toggle("Monthly local notification", isOn: $localSummaryNotificationsEnabled)
+                Toggle("Show amounts in notification", isOn: $localSummaryNotificationShowAmounts)
+                    .disabled(!localSummaryNotificationsEnabled)
+                Text("FinTrack prepares this summary from data on this device. The notification is scheduled for the next morning when the app is used.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             NavigationLink { PasswordChangeView() } label: {
@@ -90,6 +99,21 @@ struct ProfileSettingsView: View {
             do {
                 await store.saveSettings(value, accessToken: auth.token())
                 try await auth.setMonthlyEmailPreference(optIn: monthlyEmailOptIn)
+                if localSummaryNotificationsEnabled {
+                    guard await LocalSummaryNotificationScheduler.requestAuthorization() else {
+                        localSummaryNotificationsEnabled = false
+                        errorMessage = "Allow notifications in Settings to receive local summaries."
+                        return
+                    }
+                    await LocalSummaryNotificationScheduler.scheduleCurrentMonthSummary(
+                        transactions: store.transactions,
+                        categories: store.categories,
+                        budgets: store.budgets,
+                        currency: value.currency
+                    )
+                } else {
+                    LocalSummaryNotificationScheduler.cancel()
+                }
                 dismiss()
             } catch { errorMessage = error.localizedDescription }
         }

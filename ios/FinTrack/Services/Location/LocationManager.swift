@@ -1,7 +1,6 @@
 import CoreLocation
 import Foundation
 
-@MainActor
 final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published private(set) var location: CLLocation?
     @Published private(set) var errorMessage: String?
@@ -14,6 +13,7 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
+    @MainActor
     func requestCurrentLocation() {
         errorMessage = nil
         switch manager.authorizationStatus {

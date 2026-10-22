@@ -53,9 +53,13 @@ private struct FinTrackRootView: View {
                 isLocked = true
             }
             if phase == .active && isLocked { Task { await unlock() } }
+            if phase == .active {
+                Task { await scheduleLocalSummaryNotification() }
+            }
         }
         .task {
             if deviceLockEnabled { isLocked = true; await unlock() }
+            await scheduleLocalSummaryNotification()
         }
         .task(id: auth.isAuthenticated) {
             guard auth.isAuthenticated, let token = auth.token() else { return }
@@ -82,6 +86,9 @@ private struct FinTrackRootView: View {
         .onOpenURL(perform: handleShortcutURL)
         .onChange(of: auth.isAuthenticated) { _, authenticated in
             if authenticated { hasSeenWelcome = true }
+        }
+        .onChange(of: store.transactions) { _, _ in
+            Task { await scheduleLocalSummaryNotification() }
         }
         .onChange(of: isLocked) { _, locked in
             if !locked { presentPendingShortcutIfReady() }
@@ -181,6 +188,15 @@ private struct FinTrackRootView: View {
         reviewWarning = pendingShortcut.reviewWarning
         reviewDraft = pendingShortcut.transaction
         self.pendingShortcut = nil
+    }
+
+    private func scheduleLocalSummaryNotification() async {
+        await LocalSummaryNotificationScheduler.scheduleCurrentMonthSummary(
+            transactions: store.transactions,
+            categories: store.categories,
+            budgets: store.budgets,
+            currency: store.settings.currency
+        )
     }
 }
 

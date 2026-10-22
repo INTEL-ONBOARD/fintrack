@@ -40,3 +40,52 @@ import Testing
     #expect(FinanceMath.spending(for: transactions, categoryID: nil, from: start, to: end) == 7_000)
     #expect(FinanceMath.budgetProgress(spentMinor: 15_000, limitMinor: 10_000) == 1)
 }
+
+@Test func localMonthlySummaryIncludesTotalsTopCategoryAndBudget() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 15))!
+    let groceries = FinanceCategory(name: "Groceries", kind: .expense)
+    let transactions = [
+        FinanceTransaction(kind: .income, amountMinor: 100_000, occurredAt: date),
+        FinanceTransaction(kind: .expense, amountMinor: 20_000, occurredAt: date, categoryID: groceries.id),
+        FinanceTransaction(kind: .refund, amountMinor: 2_000, occurredAt: date, categoryID: groceries.id)
+    ]
+    let budgets = [FinanceBudget(month: "2026-10", amountMinor: 50_000)]
+
+    let summary = LocalSummaryReportBuilder.make(
+        for: date,
+        transactions: transactions,
+        categories: [groceries],
+        budgets: budgets,
+        currency: "LKR",
+        calendar: calendar
+    )
+
+    #expect(summary.monthKey == "2026-10")
+    #expect(summary.transactionCount == 3)
+    #expect(summary.totals.incomeMinor == 100_000)
+    #expect(summary.totals.expenseMinor == 18_000)
+    #expect(summary.topCategoryName == "Groceries")
+    #expect(summary.topCategoryMinor == 18_000)
+    #expect(summary.budgetLimitMinor == 50_000)
+    #expect(summary.budgetSpentMinor == 18_000)
+}
+
+@Test func localSummaryNotificationCanHideAmounts() {
+    let summary = LocalMonthlySummary(
+        monthKey: "2026-10",
+        monthTitle: "October 2026",
+        transactionCount: 1,
+        totals: ReportTotals(incomeMinor: 100_000, expenseMinor: 20_000),
+        topCategoryName: "Groceries",
+        topCategoryMinor: 20_000,
+        budgetLimitMinor: nil,
+        budgetSpentMinor: 20_000,
+        currency: "LKR"
+    )
+
+    #expect(summary.notificationBody(showAmounts: true).contains("LKR"))
+    #expect(!summary.notificationBody(showAmounts: false).contains("100,000"))
+    #expect(summary.notificationBody(showAmounts: false).contains("Groceries"))
+}
