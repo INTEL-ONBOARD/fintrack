@@ -11,6 +11,14 @@ struct OverviewView: View {
     private var overallBudget: FinanceBudget? {
         store.budgets.first { $0.month == FinanceMath.monthKey(for: .now) && $0.categoryID == nil }
     }
+    private var insights: [OnDeviceInsight] {
+        OnDeviceInsights.make(
+            for: .now,
+            transactions: store.transactions,
+            categories: store.categories,
+            budgets: store.budgets
+        )
+    }
 
     var body: some View {
         ScrollView {
@@ -68,6 +76,29 @@ struct OverviewView: View {
                 }
                 .buttonStyle(.plain)
 
+                if !insights.isEmpty {
+                    FinanceCard {
+                        Text("On-device insights")
+                            .font(.headline)
+                        Text("These suggestions are calculated locally from your transaction history.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        ForEach(insights) { insight in
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: iconName(for: insight.level))
+                                    .foregroundStyle(color(for: insight.level))
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(insight.title).font(.subheadline.bold())
+                                    Text(insight.message)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.top, 8)
+                        }
+                    }
+                }
+
                 Text("Recent transactions")
                     .font(.headline)
                     .foregroundStyle(FinTrackStyle.ink)
@@ -109,6 +140,22 @@ struct OverviewView: View {
                 .foregroundStyle(color)
                 .minimumScaleFactor(0.8)
                 .lineLimit(1)
+        }
+    }
+
+    private func iconName(for level: OnDeviceInsightLevel) -> String {
+        switch level {
+        case .positive: "arrow.down.right.circle"
+        case .warning: "exclamationmark.triangle"
+        case .information: "lightbulb"
+        }
+    }
+
+    private func color(for level: OnDeviceInsightLevel) -> Color {
+        switch level {
+        case .positive: FinTrackStyle.green
+        case .warning: .orange
+        case .information: FinTrackStyle.purple
         }
     }
 }

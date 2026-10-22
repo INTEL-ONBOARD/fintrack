@@ -59,6 +59,7 @@
 		F2A4D6B8C0E1F23456789AC0 /* FinTrackTransactionClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC1 /* FinTrackTransactionClassifier.mlmodel */; };
 		F2A4D6B8C0E1F23456789AC2 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC3 /* CameraPicker.swift */; };
 		F2A4D6B8C0E1F23456789AC4 /* FinancialSummaryIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC5 /* FinancialSummaryIntents.swift */; };
+		F2A4D6B8C0E1F23456789AC6 /* OnDeviceInsights.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A4D6B8C0E1F23456789AC7 /* OnDeviceInsights.swift */; };
 		F690256593F9B16BA36BA0AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25AFBCAD2C774AA9FEF63052 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -126,6 +127,7 @@
 		F2A4D6B8C0E1F23456789AC1 /* FinTrackTransactionClassifier.mlmodel */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.mlmodel; name = FinTrackTransactionClassifier.mlmodel; path = Resources/FinTrackTransactionClassifier.mlmodel; sourceTree = "<group>"; };
 		F2A4D6B8C0E1F23456789AC3 /* CameraPicker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CameraPicker.swift; path = Features/Transactions/CameraPicker.swift; sourceTree = "<group>"; };
 		F2A4D6B8C0E1F23456789AC5 /* FinancialSummaryIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FinancialSummaryIntents.swift; path = Services/Shortcuts/FinancialSummaryIntents.swift; sourceTree = "<group>"; };
+		F2A4D6B8C0E1F23456789AC7 /* OnDeviceInsights.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OnDeviceInsights.swift; path = Services/Analysis/OnDeviceInsights.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -196,6 +198,7 @@
 				F2A4D6B8C0E1F23456789AC1 /* FinTrackTransactionClassifier.mlmodel */,
 				F2A4D6B8C0E1F23456789AC3 /* CameraPicker.swift */,
 				F2A4D6B8C0E1F23456789AC5 /* FinancialSummaryIntents.swift */,
+				F2A4D6B8C0E1F23456789AC7 /* OnDeviceInsights.swift */,
 			);
 			name = FinTrack;
 			path = FinTrack;
@@ -384,6 +387,7 @@
 				F2A4D6B8C0E1F23456789AC0 /* FinTrackTransactionClassifier.mlmodel in Sources */,
 				F2A4D6B8C0E1F23456789AC2 /* CameraPicker.swift in Sources */,
 				F2A4D6B8C0E1F23456789AC4 /* FinancialSummaryIntents.swift in Sources */,
+				F2A4D6B8C0E1F23456789AC6 /* OnDeviceInsights.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -127,6 +127,36 @@ import Testing
     #expect(FinancialSummaryIntentText.budgetStatus(for: overBudget).contains("over the limit"))
 }
 
+@Test func onDeviceInsightsWarnAboutProjectedBudgetAndDominantCategory() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 15, hour: 12))!
+    let groceries = FinanceCategory(name: "Groceries", kind: .expense)
+    let transactions = [
+        FinanceTransaction(kind: .expense, amountMinor: 50_000, occurredAt: date, categoryID: groceries.id),
+        FinanceTransaction(kind: .expense, amountMinor: 10_000, occurredAt: date, categoryID: UUID()),
+        FinanceTransaction(
+            kind: .expense,
+            amountMinor: 30_000,
+            occurredAt: calendar.date(byAdding: .month, value: -1, to: date)!,
+            categoryID: groceries.id
+        )
+    ]
+    let budgets = [FinanceBudget(month: "2026-10", amountMinor: 100_000)]
+
+    let insights = OnDeviceInsights.make(
+        for: date,
+        transactions: transactions,
+        categories: [groceries],
+        budgets: budgets,
+        calendar: calendar
+    )
+
+    #expect(insights.contains { $0.id == "projected-budget-overrun" })
+    #expect(insights.contains { $0.id == "spending-increase" })
+    #expect(insights.contains { $0.message.contains("Groceries") })
+}
+
 @Test func onDeviceClassifierSuggestsCategoryFromMerchantText() {
     let groceries = FinanceCategory(name: "Groceries", kind: .expense)
     let transport = FinanceCategory(name: "Transport", kind: .expense)
