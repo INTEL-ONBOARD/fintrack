@@ -54,20 +54,25 @@ final class RealtimeSyncService: ObservableObject {
     }
 
     private func start(accessToken: String) {
-        guard var components = URLComponents(url: FinMateAPIClient.baseURL, resolvingAgainstBaseURL: false) else { return }
-        components.scheme = "wss"
-        components.path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/socket.io/"
-        components.queryItems = [
-            URLQueryItem(name: "EIO", value: "4"),
-            URLQueryItem(name: "transport", value: "websocket")
-        ]
-        guard let url = components.url else { return }
+        guard let url = Self.socketURL(baseURL: FinMateAPIClient.baseURL) else { return }
         let socket = session.webSocketTask(with: url)
         self.socket = socket
         socket.resume()
         receiveTask = Task { [weak self] in
             await self?.receiveMessages(accessToken: accessToken)
         }
+    }
+
+    nonisolated static func socketURL(baseURL: URL) -> URL? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return nil }
+        components.scheme = "wss"
+        let basePath = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        components.path = "/" + (basePath.isEmpty ? "" : basePath + "/") + "socket.io/"
+        components.queryItems = [
+            URLQueryItem(name: "EIO", value: "4"),
+            URLQueryItem(name: "transport", value: "websocket")
+        ]
+        return components.url
     }
 
     private func receiveMessages(accessToken: String) async {

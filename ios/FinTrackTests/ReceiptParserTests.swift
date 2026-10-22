@@ -55,4 +55,41 @@ struct ReceiptParserTests {
         #expect(draft.totalMinorUnits == nil)
         #expect(draft.issues == [.unsupportedCurrency])
     }
+
+    @Test func readsExpresswayReceipt() {
+        let receipt = """
+        roperty of Expressway Management Division - Road Development Authority
+        OUTER CIRCULAR HIGHWAY
+        USER FEE RECEIPT
+        Issued 2026-09-23 16:20:58
+        RS(LKR) : 700.00
+        KOTHALAWALA/GODAGAMA
+        """
+
+        let draft = ReceiptParser.parse(receipt)
+        #expect(draft.merchant == "OUTER CIRCULAR HIGHWAY")
+        #expect(draft.date == ReceiptCalendarDate(year: 2026, month: 9, day: 23))
+        #expect(draft.totalMinorUnits == 70_000)
+        #expect(draft.issues.isEmpty)
+    }
+
+    @Test func readsCardSlipWhenBackgroundTextComesFirst() {
+        let receipt = """
+        fn
+        control
+        option
+        COMMERCIAL BANK
+        BLUE WAY FILLING STATION PVT LTD
+        DATE/TIME 2026/09/11 08:48:37
+        SALE
+        AMOUNT
+        LKR 4,000.00
+        """
+
+        let draft = ReceiptParser.parse(receipt)
+        #expect(draft.merchant == "BLUE WAY FILLING STATION PVT LTD")
+        #expect(draft.date == ReceiptCalendarDate(year: 2026, month: 9, day: 11))
+        #expect(draft.totalMinorUnits == 400_000)
+        #expect(draft.issues.isEmpty)
+    }
 }

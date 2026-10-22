@@ -1,5 +1,6 @@
 import PhotosUI
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct ImportView: View {
@@ -8,6 +9,7 @@ struct ImportView: View {
     @State private var messageText = ""
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var isScanning = false
+    @State private var showingCamera = false
     @State private var reviewDraft: FinanceTransaction?
     @State private var statusMessage: String?
     @State private var selectedStatementData: Data?
@@ -57,11 +59,26 @@ struct ImportView: View {
                     Text("Pick an image. Text recognition runs on this device.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        Label("Choose Image", systemImage: "doc.viewfinder")
+                    HStack {
+                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                            Label("Choose Image", systemImage: "photo")
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+
+                        Button {
+                            showingCamera = true
+                        } label: {
+                            Label("Take Photo", systemImage: "camera")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
                     }
-                    .buttonStyle(PrimaryButtonStyle())
                     .disabled(isScanning)
+                    if !UIImagePickerController.isSourceTypeAvailable(.camera) {
+                        Text("Camera capture is available on a physical iPhone or iPad.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     if isScanning { ProgressView("Reading image…") }
                 }
 
@@ -82,6 +99,18 @@ struct ImportView: View {
         }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: statusMessage)
+        }
+        .sheet(isPresented: $showingCamera) {
+            CameraPicker(
+                onImageCaptured: { imageData in
+                    showingCamera = false
+                    Task { await scan(imageData: imageData) }
+                },
+                onCancel: {
+                    showingCamera = false
+                }
+            )
+            .ignoresSafeArea()
         }
         .fileImporter(
             isPresented: $showingStatementPicker,
@@ -115,13 +144,21 @@ struct ImportView: View {
     }
 
     private func scan(_ item: PhotosPickerItem) async {
-        isScanning = true
-        defer { isScanning = false }
         do {
             guard let imageData = try await item.loadTransferable(type: Data.self) else {
                 statusMessage = "The selected image could not be opened."
                 return
             }
+            await scan(imageData: imageData)
+        } catch {
+            statusMessage = error.localizedDescription
+        }
+    }
+
+    private func scan(imageData: Data) async {
+        isScanning = true
+        defer { isScanning = false }
+        do {
             let text = try await ReceiptTextRecognizer().recognizeText(in: imageData)
             let draft = ReceiptParser.parse(text)
             var date = Date.now

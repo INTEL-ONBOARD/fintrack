@@ -49,15 +49,20 @@ enum ReceiptParser {
     }
 
     private static func findMerchant(in lines: [String]) -> String? {
-        for line in lines.prefix(7) {
+        var firstMatch: String?
+        for line in lines.prefix(14) {
             guard line.range(of: #"[A-Za-z]{3,}"#, options: .regularExpression) != nil else { continue }
-            if contains(#"^(?:tax )?(?:receipt|invoice|bill)(?:\s*(?:no|number|#).*|\s*)$|^thank you\b|\b(?:date|time|total|subtotal|amount due|vat|tax|phone|tel|email|www\.|http)\b"#, in: line) {
+            if contains(#"^(?:tax )?(?:receipt|invoice|bill)(?:\s*(?:no|number|#).*|\s*)$|^thank you\b|^(?:fn|control|option|command|shift|alt)$|\b(?:p?roperty of|copyright|all rights reserved|date|time|total|subtotal|amount due|vat|tax|phone|tel|email|www\.|http)\b"#, in: line) {
                 continue
             }
             let cleaned = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters))
-            if !cleaned.isEmpty { return cleaned }
+            if cleaned.isEmpty { continue }
+            if contains(#"\b(?:store|super|mart|cafe|coffee|restaurant|filling station|highway|pvt|ltd)\b"#, in: cleaned) {
+                return cleaned
+            }
+            if firstMatch == nil { firstMatch = cleaned }
         }
-        return nil
+        return firstMatch
     }
 
     private static func findDate(in lines: [String]) -> ReceiptCalendarDate? {
@@ -107,16 +112,19 @@ enum ReceiptParser {
             let score: Int
             if contains(#"\bgrand total\b"#, in: line) { score = 4 }
             else if contains(#"\b(?:amount payable|amount due|total due|net total)\b"#, in: line) { score = 3 }
-            else if contains(#"\btotal\b"#, in: line) { score = 2 }
+            else if contains(#"\b(?:total|amount)\b|\brs\.?\s*\(\s*lkr\s*\)"#, in: line) { score = 2 }
             else { continue }
 
             let amountSection: String
-            if let label = line.range(of: #"(?i)\b(?:grand total|amount payable|amount due|total due|net total|total)\b"#, options: .regularExpression) {
+            if let label = line.range(of: #"(?i)\b(?:grand total|amount payable|amount due|total due|net total|total|amount)\b|\brs\.?\s*\(\s*lkr\s*\)"#, options: .regularExpression) {
                 amountSection = String(line[label.upperBound...])
             } else {
                 continue
             }
-            guard let rawAmount = captures(#"(?i)(?:LKR|Rs\.?)?\s*([0-9][0-9,.]*)"#, in: amountSection)?.first,
+            let nextLine = index + 1 < lines.count ? lines[index + 1] : ""
+            let amountText = amountSection.range(of: #"[0-9]"#, options: .regularExpression) == nil &&
+                contains(#"\b(?:LKR|Rs\.?)\b"#, in: nextLine) ? nextLine : amountSection
+            guard let rawAmount = captures(#"(?i)(?:LKR|Rs\.?)?\s*([0-9][0-9,.]*)"#, in: amountText)?.first,
                   let amount = minorUnits(from: rawAmount.trimmingCharacters(in: CharacterSet(charactersIn: ".,"))) else {
                 continue
             }

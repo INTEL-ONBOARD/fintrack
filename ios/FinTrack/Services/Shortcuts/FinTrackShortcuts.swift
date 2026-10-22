@@ -62,6 +62,7 @@ struct ImportFinancialMessageIntent: AppIntent {
             case .transferDirection: "Check the transfer direction before saving."
             case .multipleAmounts: "Check the transaction amount before saving."
             case .missingCounterparty: "Add the merchant or person before saving."
+            case .currencyNeedsConfirmation: "Confirm the currency before saving."
             }
         }
 
@@ -149,6 +150,18 @@ struct FinTrackAppShortcuts: AppShortcutsProvider {
             phrases: ["Add income in \(.applicationName)"],
             shortTitle: "Add Income",
             systemImageName: "plus.circle"
+        )
+        AppShortcut(
+            intent: MonthlySpendingIntent(),
+            phrases: ["How much did I spend this month in \(.applicationName)"],
+            shortTitle: "Monthly Spending",
+            systemImageName: "chart.bar"
+        )
+        AppShortcut(
+            intent: BudgetStatusIntent(),
+            phrases: ["What is my budget status in \(.applicationName)"],
+            shortTitle: "Budget Status",
+            systemImageName: "chart.pie"
         )
     }
 }

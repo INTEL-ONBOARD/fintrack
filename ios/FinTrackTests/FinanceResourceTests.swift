@@ -90,6 +90,34 @@ import Testing
     #expect(json["read"] as? Bool == false)
 }
 
+@Test func pushPayloadDecodesAlertAndDataFields() {
+    let payload = PushNotificationPayload(userInfo: [
+        "aps": ["alert": ["title": "Budget warning", "body": "Budget is almost full."]],
+        "data": ["id": "push-1", "type": "alert", "time": "2026-10-22T10:00:00Z"]
+    ])
+
+    #expect(payload.id == "push-1")
+    #expect(payload.title == "Budget warning")
+    #expect(payload.body == "Budget is almost full.")
+    #expect(payload.type == .alert)
+    #expect(PushNotificationService.tokenString(from: Data([0x01, 0xab])) == "01ab")
+}
+
+@Test @MainActor func pushNotificationIsSavedOnceLocally() throws {
+    let store = FinanceStore(persistence: PersistenceController(inMemory: true))
+    let payload = PushNotificationPayload(userInfo: [
+        "id": "push-1",
+        "title": "Bill reminder",
+        "body": "Internet is due soon"
+    ])
+
+    try store.savePushNotification(payload)
+    try store.savePushNotification(payload)
+
+    #expect(store.notifications.count == 1)
+    #expect(store.notifications.first?.serverID == "push-1")
+}
+
 @Test func settingsRequestKeepsCurrencyAndNotificationPreferences() throws {
     let settings = FinanceUserSettings(
         name: "Alex", email: "alex@example.com", currency: "LKR",
@@ -229,4 +257,18 @@ import Testing
 @Test func realtimeSocketEventPacketDecodesEventName() {
     #expect(RealtimeSyncService.eventName(from: "42[\"bills:updated\",{\"id\":\"1\"}]") == "bills:updated")
     #expect(RealtimeSyncService.eventName(from: "2") == nil)
+}
+
+@Test func realtimeSocketURLKeepsProductionBasePath() {
+    let url = RealtimeSyncService.socketURL(baseURL: URL(string: "https://finmate.com.lk/finwise")!)
+    #expect(url?.absoluteString == "wss://finmate.com.lk/finwise/socket.io/?EIO=4&transport=websocket")
+}
+
+@Test func deviceTokenRequestUsesIosPlatform() throws {
+    let data = try JSONEncoder().encode(
+        DeviceTokenRegistrationRequest(token: "abc123", platform: "ios")
+    )
+    let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: String])
+    #expect(json["token"] == "abc123")
+    #expect(json["platform"] == "ios")
 }
