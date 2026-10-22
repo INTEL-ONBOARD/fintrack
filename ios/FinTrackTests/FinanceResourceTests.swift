@@ -259,6 +259,11 @@ import Testing
     #expect(RealtimeSyncService.eventName(from: "2") == nil)
 }
 
+@Test func realtimeSocketURLKeepsProductionBasePath() {
+    let url = RealtimeSyncService.socketURL(baseURL: URL(string: "https://finmate.com.lk/finwise")!)
+    #expect(url?.absoluteString == "wss://finmate.com.lk/finwise/socket.io/?EIO=4&transport=websocket")
+}
+
 @Test func deviceTokenRequestUsesIosPlatform() throws {
     let data = try JSONEncoder().encode(
         DeviceTokenRegistrationRequest(token: "abc123", platform: "ios")

@@ -16,6 +16,7 @@ struct FinTrackApp: App {
                 .environmentObject(auth)
                 .environmentObject(realtime)
                 .tint(FinTrackStyle.purple)
+                .preferredColorScheme(.light)
                 .task { await auth.restore() }
         }
     }

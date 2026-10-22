@@ -215,6 +215,7 @@ struct TransactionEditorView: View {
             case .transferDirection: "Check the transfer direction before saving."
             case .multipleAmounts: "Check which amount should be saved."
             case .missingCounterparty: "Add the merchant or person before saving."
+            case .currencyNeedsConfirmation: "Confirm this amount is in Sri Lankan rupees and check the merchant before saving."
             }
             applyVoiceDraft(draft, warning: warning)
         }

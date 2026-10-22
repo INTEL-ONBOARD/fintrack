@@ -34,6 +34,7 @@ enum FinancialMessageParseResult: Equatable, Sendable {
         case transferDirection
         case multipleAmounts
         case missingCounterparty
+        case currencyNeedsConfirmation
     }
 
     case ignored(IgnoreReason)
@@ -44,13 +45,24 @@ enum FinancialMessageParseResult: Equatable, Sendable {
 enum FinancialMessageParser {
     static func parseVoice(_ message: String) -> FinancialMessageParseResult {
         var normalized = message
+        let hasRupeeSymbol = normalized.contains("₹")
+        normalized = replace(#"₹\s*([0-9][0-9,.]*)"#, with: "LKR $1", in: normalized)
         normalized = replace(
             #"(?i)\b([0-9][0-9,.]*)\s*(?:rupees?|lkr|rs\.?)\b"#,
             with: "LKR $1",
             in: normalized
         )
         normalized = replace(#"(?i)\b(spent|paid|purchased)\s+on\b"#, with: "$1 at", in: normalized)
-        return parse(normalized)
+        let result = parse(normalized)
+        if hasRupeeSymbol {
+            switch result {
+            case .ready(let draft), .reviewRequired(let draft, _):
+                return .reviewRequired(draft, .currencyNeedsConfirmation)
+            case .ignored:
+                break
+            }
+        }
+        return result
     }
 
     static func parse(_ message: String, sender: String? = nil) -> FinancialMessageParseResult {

@@ -106,4 +106,15 @@ struct FinancialMessageParserTests {
         #expect(draft.amountMinorUnits == 185_000)
         #expect(draft.counterparty == "lunch with Nimal")
     }
+
+    @Test func voiceRupeeSymbolNeedsCurrencyReview() {
+        let result = FinancialMessageParser.parseVoice("I spent ₹1850 on lunch with minimal")
+        guard case .reviewRequired(let draft, .currencyNeedsConfirmation) = result else {
+            Issue.record("Expected currency review, got \(result)")
+            return
+        }
+        #expect(draft.kind == .expense)
+        #expect(draft.amountMinorUnits == 185_000)
+        #expect(draft.counterparty == nil)
+    }
 }

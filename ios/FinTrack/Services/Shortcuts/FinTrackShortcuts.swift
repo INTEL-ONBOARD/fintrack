@@ -62,6 +62,7 @@ struct ImportFinancialMessageIntent: AppIntent {
             case .transferDirection: "Check the transfer direction before saving."
             case .multipleAmounts: "Check the transaction amount before saving."
             case .missingCounterparty: "Add the merchant or person before saving."
+            case .currencyNeedsConfirmation: "Confirm the currency before saving."
             }
         }
 
