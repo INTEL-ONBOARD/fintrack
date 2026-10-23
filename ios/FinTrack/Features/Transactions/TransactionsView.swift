@@ -1,5 +1,6 @@
 import MapKit
 import SwiftUI
+import UIKit
 
 struct TransactionsView: View {
     @EnvironmentObject private var store: FinanceStore
@@ -115,6 +116,7 @@ struct TransactionsView: View {
 
 struct TransactionDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: FinanceStore
     @State private var showingEditor = false
 
     let transaction: FinanceTransaction
@@ -178,6 +180,23 @@ struct TransactionDetailView: View {
                     }
                     if !transaction.tags.isEmpty {
                         detailRow("Tags", value: transaction.tags.joined(separator: ", "))
+                    }
+                }
+
+                if let data = store.receiptImageData(for: transaction.id),
+                   let image = UIImage(data: data) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Receipt")
+                            .font(.title3.weight(.semibold))
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: 360)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .accessibilityLabel("Attached receipt")
+                        Text("Stored on this device")
+                            .font(.caption)
+                            .foregroundStyle(FinTrackStyle.muted)
                     }
                 }
 

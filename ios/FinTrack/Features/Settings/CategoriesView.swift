@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CategoriesView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @State private var editing: FinanceCategory?
     @State private var adding = false
     @State private var errorMessage: String?
@@ -25,7 +26,10 @@ struct CategoriesView: View {
                         .buttonStyle(.plain)
                         .swipeActions {
                             Button("Delete", role: .destructive) {
-                                do { try store.delete(category) }
+                                do {
+                                    try store.delete(category)
+                                    if let token = auth.token() { Task { await store.syncCategoriesBudgets(accessToken: token) } }
+                                }
                                 catch { errorMessage = error.localizedDescription }
                             }
                         }
@@ -47,6 +51,7 @@ struct CategoriesView: View {
 private struct CategoryEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     let category: FinanceCategory?
     @State private var name: String
     @State private var kind: TransactionKind
@@ -88,9 +93,13 @@ private struct CategoryEditorView: View {
     }
 
     private func save() {
-        let value = FinanceCategory(id: category?.id ?? UUID(), name: name, kind: kind, color: category?.color ?? "#151718")
+        let value = FinanceCategory(
+            id: category?.id ?? UUID(), serverID: category?.serverID,
+            name: name, kind: kind, color: category?.color ?? "#151718"
+        )
         do {
             try store.save(value)
+            if let token = auth.token() { Task { await store.syncCategoriesBudgets(accessToken: token) } }
             dismiss()
         } catch { errorMessage = error.localizedDescription }
     }

@@ -7,6 +7,9 @@ struct SettingsView: View {
     @AppStorage("biometricLockEnabled") private var deviceLockEnabled = false
     @AppStorage(LocalSummaryNotificationScheduler.enabledKey) private var localSummaryNotificationsEnabled = false
     @AppStorage(LocalSummaryNotificationScheduler.showAmountsKey) private var localSummaryNotificationShowAmounts = true
+    @AppStorage(LocalSmartNotificationScheduler.budgetKey) private var smartBudgetWarningsEnabled = false
+    @AppStorage(LocalSmartNotificationScheduler.recurringKey) private var smartRecurringRemindersEnabled = false
+    @AppStorage(LocalSmartNotificationScheduler.unusualKey) private var smartUnusualSpendingEnabled = false
     @State private var errorMessage: String?
     @State private var showingAuth = false
 
@@ -88,9 +91,19 @@ struct SettingsView: View {
 
             Section("On-device summary") {
                 Toggle("Monthly local notification", isOn: $localSummaryNotificationsEnabled)
-                Toggle("Show amounts in notification", isOn: $localSummaryNotificationShowAmounts)
-                    .disabled(!localSummaryNotificationsEnabled)
                 Text("FinTrack prepares a summary from transactions on this device and schedules it for the next morning.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Smart alerts") {
+                Toggle("Budget warnings", isOn: $smartBudgetWarningsEnabled)
+                Toggle("Recurring payment reminders", isOn: $smartRecurringRemindersEnabled)
+                Toggle("Unusual spending alerts", isOn: $smartUnusualSpendingEnabled)
+                Toggle("Show amounts in notifications", isOn: $localSummaryNotificationShowAmounts)
+                    .disabled(!localSummaryNotificationsEnabled && !smartBudgetWarningsEnabled &&
+                              !smartRecurringRemindersEnabled && !smartUnusualSpendingEnabled)
+                Text("Alerts are calculated on this device. Recurring payments and unusual spending are estimates.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -124,10 +137,14 @@ struct SettingsView: View {
             Task { await updateLocalSummary(enabled: enabled) }
         }
         .onChange(of: localSummaryNotificationShowAmounts) { _, _ in
-            if localSummaryNotificationsEnabled {
-                Task { await scheduleLocalSummary() }
+            Task {
+                if localSummaryNotificationsEnabled { await scheduleLocalSummary() }
+                await scheduleSmartAlerts()
             }
         }
+        .onChange(of: smartBudgetWarningsEnabled) { _, _ in Task { await updateSmartAlerts() } }
+        .onChange(of: smartRecurringRemindersEnabled) { _, _ in Task { await updateSmartAlerts() } }
+        .onChange(of: smartUnusualSpendingEnabled) { _, _ in Task { await updateSmartAlerts() } }
         .sheet(isPresented: $showingAuth) { AuthView() }
         .alert("Settings", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
@@ -154,6 +171,26 @@ struct SettingsView: View {
             categories: store.categories,
             budgets: store.budgets,
             currency: store.settings.currency
+        )
+    }
+
+    private func updateSmartAlerts() async {
+        if smartBudgetWarningsEnabled || smartRecurringRemindersEnabled || smartUnusualSpendingEnabled {
+            guard await LocalSummaryNotificationScheduler.requestAuthorization() else {
+                smartBudgetWarningsEnabled = false
+                smartRecurringRemindersEnabled = false
+                smartUnusualSpendingEnabled = false
+                errorMessage = "Allow notifications in iPhone Settings to receive smart alerts."
+                return
+            }
+        }
+        await scheduleSmartAlerts()
+    }
+
+    private func scheduleSmartAlerts() async {
+        await LocalSmartNotificationScheduler.schedule(
+            transactions: store.transactions, categories: store.categories,
+            budgets: store.budgets, currency: store.settings.currency
         )
     }
 }

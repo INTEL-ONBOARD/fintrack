@@ -172,3 +172,167 @@ enum LocalSummaryNotificationScheduler {
         }
     }
 }
+
+struct SmartAlertPreferences {
+    var budgetWarnings: Bool
+    var recurringReminders: Bool
+    var unusualSpending: Bool
+    var showAmounts: Bool
+}
+
+struct SmartAlert: Equatable {
+    let id: String
+    let title: String
+    let body: String
+    let fireDate: Date?
+}
+
+enum SmartAlertPlanner {
+    static func make(
+        now: Date, transactions: [FinanceTransaction], categories: [FinanceCategory],
+        budgets: [FinanceBudget], currency: String, preferences: SmartAlertPreferences,
+        calendar: Calendar = .current
+    ) -> [SmartAlert] {
+        let matching = transactions.filter { $0.currency == currency && $0.occurredAt <= now }
+        var alerts: [SmartAlert] = []
+        let month = FinanceMath.monthInterval(containing: now, calendar: calendar)
+
+        if preferences.budgetWarnings {
+            for budget in budgets where budget.currency == currency && budget.month == FinanceMath.monthKey(for: now, calendar: calendar) {
+                let spent = FinanceMath.spending(
+                    for: matching, categoryID: budget.categoryID, from: month.start, to: now.addingTimeInterval(1)
+                )
+                guard spent > 0, budget.amountMinor > 0,
+                      Double(spent) >= Double(budget.amountMinor) * 0.8 else { continue }
+                let exceeded = spent >= budget.amountMinor
+                let name = budget.categoryID.flatMap { id in categories.first(where: { $0.id == id })?.name } ?? "overall"
+                let body = preferences.showAmounts
+                    ? "Your \(name) budget has used \(Money.formatted(spent, currency: currency)) of \(Money.formatted(budget.amountMinor, currency: currency))."
+                    : "Your \(name) budget needs attention."
+                alerts.append(SmartAlert(
+                    id: "fintrack.smart.budget.\(budget.id).\(budget.month).\(exceeded ? 100 : 80)",
+                    title: exceeded ? "Budget limit reached" : "Budget nearly used",
+                    body: body, fireDate: nil
+                ))
+            }
+        }
+
+        if preferences.recurringReminders {
+            let payments = FinanceMath.recurringPayments(
+                for: matching, from: now.addingTimeInterval(-40 * 86_400), to: now.addingTimeInterval(1),
+                calendar: calendar
+            )
+            for payment in payments.prefix(10) {
+                guard let due = calendar.date(byAdding: .month, value: 1, to: payment.lastDate),
+                      due > now, due < now.addingTimeInterval(35 * 86_400) else { continue }
+                let dayBefore = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: due)) ?? due
+                let preferred = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: dayBefore) ?? dayBefore
+                let dueMorning = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: due) ?? due
+                let fireDate = preferred > now ? preferred : dueMorning
+                guard fireDate > now else { continue }
+                let body = preferences.showAmounts
+                    ? "A payment to \(payment.merchant) of about \(Money.formatted(payment.amountMinor, currency: currency)) may be due soon."
+                    : "A payment to \(payment.merchant) may be due soon."
+                alerts.append(SmartAlert(
+                    id: "fintrack.smart.recurring.\(payment.merchant.lowercased()).\(FinanceMath.monthKey(for: due, calendar: calendar))",
+                    title: "Possible recurring payment", body: body, fireDate: fireDate
+                ))
+            }
+        }
+
+        if preferences.unusualSpending {
+            let recent = matching.filter {
+                $0.kind.isOutflow && $0.occurredAt >= now.addingTimeInterval(-86_400)
+            }.sorted { $0.occurredAt > $1.occurredAt }
+            for transaction in recent {
+                let previous = matching.filter {
+                    $0.kind.isOutflow && $0.id != transaction.id &&
+                    $0.occurredAt < transaction.occurredAt &&
+                    $0.occurredAt >= transaction.occurredAt.addingTimeInterval(-90 * 86_400)
+                }.map(\.amountMinor).sorted()
+                guard previous.count >= 5 else { continue }
+                let median = previous[previous.count / 2]
+                guard transaction.amountMinor >= 50_000,
+                      Double(transaction.amountMinor) >= Double(median) * 3 else { continue }
+                let body = preferences.showAmounts
+                    ? "\(Money.formatted(transaction.amountMinor, currency: currency)) at \(transaction.merchant.isEmpty ? "an unknown merchant" : transaction.merchant) is much larger than your usual expenses."
+                    : "A recent expense is much larger than your usual expenses."
+                alerts.append(SmartAlert(
+                    id: "fintrack.smart.unusual.\(transaction.id)",
+                    title: "Unusual spending", body: body, fireDate: nil
+                ))
+                break
+            }
+        }
+        return alerts
+    }
+}
+
+@MainActor
+enum LocalSmartNotificationScheduler {
+    static let budgetKey = "smartBudgetWarningsEnabled"
+    static let recurringKey = "smartRecurringRemindersEnabled"
+    static let unusualKey = "smartUnusualSpendingEnabled"
+    private static let sentKey = "fintrack.smart.sent-alerts"
+    private static let alertPrefix = "fintrack.smart."
+
+    static func preferences() -> SmartAlertPreferences {
+        SmartAlertPreferences(
+            budgetWarnings: UserDefaults.standard.bool(forKey: budgetKey),
+            recurringReminders: UserDefaults.standard.bool(forKey: recurringKey),
+            unusualSpending: UserDefaults.standard.bool(forKey: unusualKey),
+            showAmounts: UserDefaults.standard.object(forKey: LocalSummaryNotificationScheduler.showAmountsKey) as? Bool ?? true
+        )
+    }
+
+    static func schedule(
+        transactions: [FinanceTransaction], categories: [FinanceCategory],
+        budgets: [FinanceBudget], currency: String, now: Date = .now
+    ) async {
+        let center = UNUserNotificationCenter.current()
+        let alerts = SmartAlertPlanner.make(
+            now: now, transactions: transactions, categories: categories,
+            budgets: budgets, currency: currency, preferences: preferences()
+        )
+        let desiredIDs = Set(alerts.map(\.id))
+        let pending = await center.pendingNotificationRequests()
+        center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter {
+            $0.hasPrefix(alertPrefix) && !desiredIDs.contains($0)
+        })
+
+        let status = await center.notificationSettings().authorizationStatus
+        guard status == .authorized || status == .provisional else { return }
+        var sent = (UserDefaults.standard.dictionary(forKey: sentKey) ?? [:]).compactMapValues {
+            ($0 as? NSNumber)?.doubleValue
+        }
+        sent = sent.filter { now.timeIntervalSince1970 - $0.value < 180 * 86_400 }
+
+        for alert in alerts {
+            if alert.fireDate == nil && sent[alert.id] != nil { continue }
+            let content = UNMutableNotificationContent()
+            content.title = alert.title
+            content.body = alert.body
+            content.sound = .default
+            content.userInfo = ["route": "reports"]
+            let trigger: UNNotificationTrigger = alert.fireDate.map {
+                UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents(
+                    [.year, .month, .day, .hour, .minute], from: $0
+                ), repeats: false)
+            } ?? UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
+            let request = UNNotificationRequest(identifier: alert.id, content: content, trigger: trigger)
+            if alert.fireDate == nil {
+                sent[alert.id] = now.timeIntervalSince1970
+                UserDefaults.standard.set(sent, forKey: sentKey)
+            }
+            do {
+                try await center.add(request)
+            } catch {
+                if alert.fireDate == nil {
+                    sent.removeValue(forKey: alert.id)
+                    UserDefaults.standard.set(sent, forKey: sentKey)
+                }
+            }
+        }
+        UserDefaults.standard.set(sent, forKey: sentKey)
+    }
+}

@@ -2,6 +2,18 @@ import LocalAuthentication
 import SwiftUI
 import UIKit
 
+enum WidgetQuickAddLink {
+    static func kind(from url: URL) -> TransactionKind? {
+        guard url.scheme == "fintrack", url.host == "quick-add",
+              let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              query.count == 1, query[0].name == "kind",
+              let value = query[0].value,
+              let kind = TransactionKind(rawValue: value),
+              kind == .expense || kind == .income else { return nil }
+        return kind
+    }
+}
+
 @main
 struct FinTrackApp: App {
     @UIApplicationDelegateAdaptor(PushNotificationService.self) private var pushService
@@ -34,6 +46,8 @@ private struct FinTrackRootView: View {
     @State private var lockError: String?
     @State private var reviewDraft: FinanceTransaction?
     @State private var reviewWarning: String?
+    @State private var quickAddKind: TransactionKind?
+    @State private var pendingQuickAddKind: TransactionKind?
     @State private var pendingShortcut: PendingShortcutDraft?
     @State private var linkMessage: String?
     @State private var showingAuth = false
@@ -63,6 +77,7 @@ private struct FinTrackRootView: View {
             try? await Task.sleep(for: .milliseconds(1100))
             showingLaunchIntro = false
             if isLocked { await unlock() }
+            else { presentPendingShortcutIfReady() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background && deviceLockEnabled {
@@ -74,12 +89,16 @@ private struct FinTrackRootView: View {
             }
             if phase == .active && isLocked && !showingLaunchIntro { Task { await unlock() } }
             if phase == .active {
-                Task { await scheduleLocalSummaryNotification() }
+                Task {
+                    await scheduleLocalSummaryNotification()
+                    await scheduleSmartAlerts()
+                }
             }
         }
         .task {
             await pushService.registerIfAuthorized()
             await scheduleLocalSummaryNotification()
+            await scheduleSmartAlerts()
             refreshWidget()
         }
         .onReceive(NotificationCenter.default.publisher(for: .finTrackPushReceived)) { notification in
@@ -103,6 +122,8 @@ private struct FinTrackRootView: View {
                 switch event {
                 case .transactions:
                     await store.syncTransactions(accessToken: token)
+                case .categories, .budgets:
+                    await store.syncCategoriesBudgets(accessToken: token)
                 case .settings:
                     await store.syncSettings(accessToken: token)
                 case .goals, .bills, .accounts, .notifications:
@@ -119,14 +140,20 @@ private struct FinTrackRootView: View {
         .onChange(of: auth.isAuthenticated) { _, authenticated in
             if authenticated { hasSeenWelcome = true }
         }
+        .onChange(of: hasSeenWelcome) { _, _ in presentPendingShortcutIfReady() }
         .onChange(of: store.transactions) { _, _ in
-            Task { await scheduleLocalSummaryNotification() }
+            Task {
+                await scheduleLocalSummaryNotification()
+                await scheduleSmartAlerts()
+            }
             refreshWidget()
         }
         .onChange(of: store.budgets) { _, _ in
+            Task { await scheduleSmartAlerts() }
             refreshWidget()
         }
         .onChange(of: store.settings) { _, _ in
+            Task { await scheduleSmartAlerts() }
             refreshWidget()
         }
         .onChange(of: isLocked) { _, locked in
@@ -135,6 +162,9 @@ private struct FinTrackRootView: View {
         .sheet(isPresented: $showingAuth) { AuthView().preferredColorScheme(.light) }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: reviewWarning)
+        }
+        .sheet(item: $quickAddKind) { kind in
+            TransactionEditorView(initialKind: kind)
         }
         .alert("FinTrack", isPresented: Binding(
             get: { linkMessage != nil || store.errorMessage != nil },
@@ -261,6 +291,15 @@ private struct FinTrackRootView: View {
     }
 
     private func handleShortcutURL(_ url: URL) {
+        if url.host == "quick-add" {
+            guard let kind = WidgetQuickAddLink.kind(from: url) else {
+                linkMessage = "This widget action is invalid. Open FinTrack to add a transaction."
+                return
+            }
+            pendingQuickAddKind = kind
+            presentPendingShortcutIfReady()
+            return
+        }
         guard url.scheme == "fintrack", ["add", "import"].contains(url.host),
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               components.queryItems?.count == 1,
@@ -286,7 +325,13 @@ private struct FinTrackRootView: View {
     }
 
     private func presentPendingShortcutIfReady() {
-        guard !isLocked, hasSeenWelcome, let pendingShortcut else { return }
+        guard !isLocked, !showingLaunchIntro, hasSeenWelcome else { return }
+        if let pendingQuickAddKind {
+            quickAddKind = pendingQuickAddKind
+            self.pendingQuickAddKind = nil
+            return
+        }
+        guard let pendingShortcut else { return }
         reviewWarning = pendingShortcut.reviewWarning
         reviewDraft = pendingShortcut.transaction
         self.pendingShortcut = nil
@@ -298,6 +343,13 @@ private struct FinTrackRootView: View {
             categories: store.categories,
             budgets: store.budgets,
             currency: store.settings.currency
+        )
+    }
+
+    private func scheduleSmartAlerts() async {
+        await LocalSmartNotificationScheduler.schedule(
+            transactions: store.transactions, categories: store.categories,
+            budgets: store.budgets, currency: store.settings.currency
         )
     }
 

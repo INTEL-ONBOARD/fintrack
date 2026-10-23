@@ -78,28 +78,43 @@ struct FinanceTransaction: Identifiable, Equatable {
 
 struct FinanceCategory: Identifiable, Equatable {
     var id: UUID
+    var serverID: String?
     var name: String
     var kind: TransactionKind
     var color: String
-    init(id: UUID = UUID(), name: String, kind: TransactionKind, color: String = "#151718") {
+    var needsSync: Bool
+    init(
+        id: UUID = UUID(), serverID: String? = nil, name: String,
+        kind: TransactionKind, color: String = "#151718", needsSync: Bool = true
+    ) {
         self.id = id
+        self.serverID = serverID
         self.name = name
         self.kind = kind
         self.color = color
+        self.needsSync = needsSync
     }
 }
 
 struct FinanceBudget: Identifiable, Equatable {
     var id: UUID
+    var serverID: String?
     var month: String
     var categoryID: UUID?
     var amountMinor: Int64
     var currency: String
-    init(id: UUID = UUID(), month: String, categoryID: UUID? = nil, amountMinor: Int64, currency: String = "LKR") {
+    var needsSync: Bool
+    init(
+        id: UUID = UUID(), serverID: String? = nil, month: String,
+        categoryID: UUID? = nil, amountMinor: Int64, currency: String = "LKR",
+        needsSync: Bool = true
+    ) {
         self.id = id
+        self.serverID = serverID
         self.month = month
         self.categoryID = categoryID
         self.amountMinor = amountMinor
         self.currency = currency
+        self.needsSync = needsSync
     }
 }

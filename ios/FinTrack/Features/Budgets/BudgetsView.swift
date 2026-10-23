@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BudgetsView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @State private var selectedMonth = Date.now
     @State private var showingEditor = false
     @State private var editing: FinanceBudget?
@@ -80,6 +81,7 @@ struct BudgetsView: View {
                 guard let deleting else { return }
                 do {
                     try store.delete(deleting)
+                    if let token = auth.token() { Task { await store.syncCategoriesBudgets(accessToken: token) } }
                 } catch { store.errorMessage = error.localizedDescription }
                 self.deleting = nil
             }
@@ -90,6 +92,7 @@ struct BudgetsView: View {
 private struct BudgetEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     let month: Date
     let budget: FinanceBudget?
     @State private var categoryID: UUID?
@@ -149,6 +152,7 @@ private struct BudgetEditorView: View {
         value.amountMinor = amountMinor
         do {
             try store.save(value)
+            if let token = auth.token() { Task { await store.syncCategoriesBudgets(accessToken: token) } }
             dismiss()
         } catch { errorMessage = error.localizedDescription }
     }

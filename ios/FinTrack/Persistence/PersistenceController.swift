@@ -19,21 +19,39 @@ final class TransactionEntity: NSManagedObject {
     @NSManaged var locationName: String?
 }
 
+@objc(ReceiptEntity)
+final class ReceiptEntity: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var imageData: Data
+    @NSManaged var syncedToServerID: String?
+}
+
+@objc(PendingDeletionEntity)
+final class PendingDeletionEntity: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var resource: String
+    @NSManaged var serverID: String
+}
+
 @objc(CategoryEntity)
 final class CategoryEntity: NSManagedObject {
     @NSManaged var id: UUID
+    @NSManaged var serverID: String?
     @NSManaged var name: String
     @NSManaged var kind: String
     @NSManaged var color: String
+    @NSManaged var needsSync: Bool
 }
 
 @objc(BudgetEntity)
 final class BudgetEntity: NSManagedObject {
     @NSManaged var id: UUID
+    @NSManaged var serverID: String?
     @NSManaged var month: String
     @NSManaged var categoryID: UUID?
     @NSManaged var amountMinor: Int64
     @NSManaged var currency: String
+    @NSManaged var needsSync: Bool
 }
 
 @objc(AccountEntity)
@@ -91,7 +109,8 @@ final class PersistenceController {
     init(inMemory: Bool = false) {
         let model = NSManagedObjectModel()
         model.entities = [
-            Self.transactionEntity(), Self.categoryEntity(), Self.budgetEntity(),
+            Self.transactionEntity(), Self.receiptEntity(), Self.categoryEntity(), Self.budgetEntity(),
+            Self.pendingDeletionEntity(),
             Self.accountEntity(), Self.goalEntity(), Self.billEntity(), Self.notificationEntity()
         ]
         container = NSPersistentContainer(name: "FinTrack", managedObjectModel: model)
@@ -150,22 +169,43 @@ final class PersistenceController {
         ])
     }
 
+    private static func receiptEntity() -> NSEntityDescription {
+        let imageData = attribute("imageData", .binaryDataAttributeType)
+        imageData.allowsExternalBinaryDataStorage = true
+        return entity("Receipt", className: NSStringFromClass(ReceiptEntity.self), attributes: [
+            attribute("id", .UUIDAttributeType), imageData,
+            attribute("syncedToServerID", .stringAttributeType, optional: true)
+        ])
+    }
+
+    private static func pendingDeletionEntity() -> NSEntityDescription {
+        entity("PendingDeletion", className: NSStringFromClass(PendingDeletionEntity.self), attributes: [
+            attribute("id", .UUIDAttributeType),
+            attribute("resource", .stringAttributeType),
+            attribute("serverID", .stringAttributeType)
+        ])
+    }
+
     private static func categoryEntity() -> NSEntityDescription {
         entity("Category", className: NSStringFromClass(CategoryEntity.self), attributes: [
             attribute("id", .UUIDAttributeType),
+            attribute("serverID", .stringAttributeType, optional: true),
             attribute("name", .stringAttributeType),
             attribute("kind", .stringAttributeType),
-            attribute("color", .stringAttributeType)
+            attribute("color", .stringAttributeType),
+            attribute("needsSync", .booleanAttributeType, defaultValue: false)
         ])
     }
 
     private static func budgetEntity() -> NSEntityDescription {
         entity("Budget", className: NSStringFromClass(BudgetEntity.self), attributes: [
             attribute("id", .UUIDAttributeType),
+            attribute("serverID", .stringAttributeType, optional: true),
             attribute("month", .stringAttributeType),
             attribute("categoryID", .UUIDAttributeType, optional: true),
             attribute("amountMinor", .integer64AttributeType),
-            attribute("currency", .stringAttributeType)
+            attribute("currency", .stringAttributeType),
+            attribute("needsSync", .booleanAttributeType, defaultValue: false)
         ])
     }
 

@@ -24,9 +24,11 @@ struct FinMateAPIClient {
     static let baseURL = URL(string: "https://finmate.com.lk/finwise")!
 
     private let session: URLSession
+    private let apiURL: URL
 
-    init(session: URLSession = .shared) {
+    init(session: URLSession = .shared, apiURL: URL = Self.baseURL) {
         self.session = session
+        self.apiURL = apiURL
     }
 
     func login(email: String, password: String) async throws -> AuthResponse {
@@ -191,6 +193,55 @@ struct FinMateAPIClient {
         )
     }
 
+    func listCategories(accessToken: String) async throws -> [RemoteCategory] {
+        try await send(path: "/api/categories", method: "GET", accessToken: accessToken)
+    }
+
+    func createCategory(_ category: FinanceCategory, accessToken: String) async throws -> RemoteCategory {
+        let body = try JSONEncoder().encode(RemoteCategoryRequest(category: category))
+        return try await send(path: "/api/categories", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func updateCategory(_ category: FinanceCategory, accessToken: String) async throws {
+        guard let id = category.serverID else { return }
+        let body = try JSONEncoder().encode(RemoteCategoryUpdate(category: category))
+        let _: APIStatusResponse = try await send(path: "/api/categories/\(id)", method: "PATCH", body: body, accessToken: accessToken)
+    }
+
+    func deleteCategory(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/categories/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
+    func listBudgets(accessToken: String) async throws -> [RemoteBudget] {
+        try await send(path: "/api/budgets", method: "GET", accessToken: accessToken)
+    }
+
+    func createBudget(_ budget: FinanceBudget, categoryServerID: String?, accessToken: String) async throws -> RemoteBudget {
+        let body = try JSONEncoder().encode(RemoteBudgetRequest(budget: budget, categoryServerID: categoryServerID))
+        return try await send(path: "/api/budgets", method: "POST", body: body, accessToken: accessToken)
+    }
+
+    func updateBudget(_ budget: FinanceBudget, categoryServerID: String?, accessToken: String) async throws {
+        guard let id = budget.serverID else { return }
+        let body = try JSONEncoder().encode(RemoteBudgetUpdate(budget: budget, categoryServerID: categoryServerID))
+        let _: APIStatusResponse = try await send(path: "/api/budgets/\(id)", method: "PATCH", body: body, accessToken: accessToken)
+    }
+
+    func deleteBudget(id: String, accessToken: String) async throws {
+        let _: APIStatusResponse = try await send(path: "/api/budgets/\(id)", method: "DELETE", accessToken: accessToken)
+    }
+
+    func uploadReceipt(_ data: Data, transactionID: String, accessToken: String) async throws {
+        let body = try JSONEncoder().encode(RemoteReceipt(imageBase64: data.base64EncodedString()))
+        let _: APIStatusResponse = try await send(path: "/api/transactions/\(transactionID)/receipt", method: "PUT", body: body, accessToken: accessToken)
+    }
+
+    func getReceipt(transactionID: String, accessToken: String) async throws -> Data {
+        let receipt: RemoteReceipt = try await send(path: "/api/transactions/\(transactionID)/receipt", method: "GET", accessToken: accessToken)
+        guard let data = Data(base64Encoded: receipt.imageBase64) else { throw FinMateAPIError.invalidResponse }
+        return data
+    }
+
     func listAccounts(accessToken: String, limit: Int = 100, skip: Int = 0) async throws -> [RemoteAccount] {
         try await send(path: "/api/accounts", method: "GET", queryItems: [
             URLQueryItem(name: "limit", value: String(limit)),
@@ -342,7 +393,7 @@ struct FinMateAPIClient {
     ) async throws -> Response {
         let cleanPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         var components = URLComponents(
-            url: Self.baseURL.appendingPathComponent(cleanPath),
+            url: apiURL.appendingPathComponent(cleanPath),
             resolvingAgainstBaseURL: false
         )
         components?.queryItems = queryItems.isEmpty ? nil : queryItems
@@ -379,7 +430,7 @@ struct FinMateAPIClient {
         fields: [String: String], accessToken: String
     ) async throws -> Response {
         let cleanPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let url = Self.baseURL.appendingPathComponent(cleanPath)
+        let url = apiURL.appendingPathComponent(cleanPath)
         let boundary = "FinTrack-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -517,6 +568,105 @@ struct RemoteTransaction: Decodable {
     let account: String?
     let note: String?
     let currency: String?
+    let hasReceipt: Bool?
+}
+
+struct RemoteCategory: Decodable {
+    let id: String
+    let clientId: String?
+    let name: String
+    let kind: String
+    let color: String
+}
+
+struct RemoteCategoryRequest: Encodable {
+    let clientId: String
+    let name: String
+    let kind: String
+    let color: String
+
+    init(category: FinanceCategory) {
+        clientId = category.id.uuidString.lowercased()
+        name = category.name
+        kind = category.kind.rawValue
+        color = category.color
+    }
+}
+
+struct RemoteCategoryUpdate: Encodable {
+    let name: String
+    let kind: String
+    let color: String
+
+    init(category: FinanceCategory) {
+        name = category.name
+        kind = category.kind.rawValue
+        color = category.color
+    }
+}
+
+struct RemoteBudget: Decodable {
+    let id: String
+    let clientId: String?
+    let month: String
+    let categoryId: String?
+    let amountMinor: Int64
+    let currency: String
+}
+
+struct RemoteBudgetRequest: Encodable {
+    let clientId: String
+    let month: String
+    let categoryId: String?
+    let amountMinor: Int64
+    let currency: String
+
+    init(budget: FinanceBudget, categoryServerID: String?) {
+        clientId = budget.id.uuidString.lowercased()
+        month = budget.month
+        categoryId = categoryServerID
+        amountMinor = budget.amountMinor
+        currency = budget.currency
+    }
+
+    enum CodingKeys: String, CodingKey { case clientId, month, categoryId, amountMinor, currency }
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(clientId, forKey: .clientId)
+        try values.encode(month, forKey: .month)
+        if let categoryId { try values.encode(categoryId, forKey: .categoryId) }
+        else { try values.encodeNil(forKey: .categoryId) }
+        try values.encode(amountMinor, forKey: .amountMinor)
+        try values.encode(currency, forKey: .currency)
+    }
+}
+
+struct RemoteBudgetUpdate: Encodable {
+    let month: String
+    let categoryId: String?
+    let amountMinor: Int64
+    let currency: String
+
+    init(budget: FinanceBudget, categoryServerID: String?) {
+        month = budget.month
+        categoryId = categoryServerID
+        amountMinor = budget.amountMinor
+        currency = budget.currency
+    }
+
+    enum CodingKeys: String, CodingKey { case month, categoryId, amountMinor, currency }
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(month, forKey: .month)
+        if let categoryId { try values.encode(categoryId, forKey: .categoryId) }
+        else { try values.encodeNil(forKey: .categoryId) }
+        try values.encode(amountMinor, forKey: .amountMinor)
+        try values.encode(currency, forKey: .currency)
+    }
+}
+
+struct RemoteReceipt: Codable {
+    let imageBase64: String
 }
 
 struct RemoteTransactionRequest: Encodable {

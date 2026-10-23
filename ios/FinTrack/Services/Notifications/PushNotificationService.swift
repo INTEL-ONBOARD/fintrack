@@ -95,7 +95,9 @@ final class PushNotificationService: NSObject, UIApplicationDelegate, UNUserNoti
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        publish(notification: notification)
+        if notification.request.trigger is UNPushNotificationTrigger {
+            publish(notification: notification)
+        }
         completionHandler([.banner, .sound, .badge])
     }
 
@@ -104,7 +106,9 @@ final class PushNotificationService: NSObject, UIApplicationDelegate, UNUserNoti
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        publish(notification: response.notification)
+        if response.notification.request.trigger is UNPushNotificationTrigger {
+            publish(notification: response.notification)
+        }
         completionHandler()
     }
 

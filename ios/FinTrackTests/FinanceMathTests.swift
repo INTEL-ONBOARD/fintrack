@@ -92,6 +92,71 @@ import Testing
     ).isEmpty)
 }
 
+@Test func smartBudgetAlertChangesAtLimitAndRespectsCurrency() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 23))!
+    let budget = FinanceBudget(month: "2026-10", amountMinor: 10_000)
+    let preferences = SmartAlertPreferences(
+        budgetWarnings: true, recurringReminders: false,
+        unusualSpending: false, showAmounts: false
+    )
+    let spent = FinanceTransaction(kind: .expense, amountMinor: 8_000, currency: "LKR", occurredAt: now)
+    let foreign = FinanceTransaction(kind: .expense, amountMinor: 30_000, currency: "USD", occurredAt: now)
+    let near = SmartAlertPlanner.make(
+        now: now, transactions: [spent, foreign], categories: [], budgets: [budget],
+        currency: "LKR", preferences: preferences, calendar: calendar
+    )
+    #expect(near.count == 1)
+    #expect(near.first?.id.hasSuffix(".80") == true)
+    #expect(!near[0].body.contains("LKR"))
+
+    let extra = FinanceTransaction(kind: .expense, amountMinor: 2_000, occurredAt: now)
+    let limit = SmartAlertPlanner.make(
+        now: now, transactions: [spent, extra], categories: [], budgets: [budget],
+        currency: "LKR", preferences: preferences, calendar: calendar
+    )
+    #expect(limit.first?.id.hasSuffix(".100") == true)
+}
+
+@Test func smartAlertsFindUpcomingRecurringAndUnusualSpending() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    func date(_ month: Int, _ day: Int) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: 12))!
+    }
+    let now = date(10, 23)
+    var transactions = [8, 9, 10].map { month in
+        FinanceTransaction(kind: .expense, amountMinor: 1_000, occurredAt: date(month, 10), merchant: "Streaming")
+    }
+    transactions += (1...5).map { day in
+        FinanceTransaction(kind: .expense, amountMinor: 10_000, occurredAt: date(10, day), merchant: "Shop")
+    }
+    transactions.append(FinanceTransaction(
+        kind: .expense, amountMinor: 60_000, occurredAt: now, merchant: "Big Shop"
+    ))
+    let preferences = SmartAlertPreferences(
+        budgetWarnings: false, recurringReminders: true,
+        unusualSpending: true, showAmounts: true
+    )
+    let alerts = SmartAlertPlanner.make(
+        now: now, transactions: transactions, categories: [], budgets: [],
+        currency: "LKR", preferences: preferences, calendar: calendar
+    )
+    #expect(alerts.count == 2)
+    #expect(alerts.contains { $0.id.contains("recurring.streaming") && $0.fireDate != nil })
+    #expect(alerts.contains { $0.id.contains("unusual") && $0.fireDate == nil })
+
+    let disabled = SmartAlertPlanner.make(
+        now: now, transactions: transactions, categories: [], budgets: [],
+        currency: "LKR", preferences: SmartAlertPreferences(
+            budgetWarnings: false, recurringReminders: false,
+            unusualSpending: false, showAmounts: false
+        ), calendar: calendar
+    )
+    #expect(disabled.isEmpty)
+}
+
 @Test func budgetSpendingTracksCategoryAndRefunds() {
     let categoryA = UUID()
     let categoryB = UUID()
