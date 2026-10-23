@@ -141,8 +141,12 @@ import Testing
     SyncURLProtocol.handler = { request in
         let path = request.url?.path ?? ""
         let method = request.httpMethod ?? ""
-        let body = (request.httpBody.flatMap { try? JSONSerialization.jsonObject(with: $0) }) as? [String: Any] ?? [:]
+        let bodyData = request.httpBody ?? SyncURLProtocol.readBodyStream(request.httpBodyStream)
+        let body = (bodyData.flatMap { try? JSONSerialization.jsonObject(with: $0) }) as? [String: Any] ?? [:]
         calls.append("\(method) \(path)", body: body)
+        if method == "GET", path.hasSuffix("/api/transactions") {
+            return (200, Data("[{\"id\":\"transaction-1\",\"name\":\"Trip\",\"category\":\"Trip\",\"amount\":-12.5,\"currency\":\"LKR\",\"hasReceipt\":false}]".utf8))
+        }
         if method == "GET" { return (200, Data("[]".utf8)) }
         if method == "POST", path.hasSuffix("/api/categories") {
             var response = body
@@ -153,6 +157,12 @@ import Testing
             var response = body
             response["id"] = "budget-1"
             return (201, try! JSONSerialization.data(withJSONObject: response))
+        }
+        if method == "POST", path.hasSuffix("/api/transactions") {
+            return (201, Data("{\"id\":\"transaction-1\"}".utf8))
+        }
+        if method == "PUT", path.hasSuffix("/api/transactions/transaction-1/receipt") {
+            return (200, Data("{\"ok\":true}".utf8))
         }
         return (404, Data("{\"error\":\"missing route\"}".utf8))
     }
@@ -180,6 +190,20 @@ import Testing
     #expect(categoryPost < budgetPost)
     #expect(savedCalls[budgetPost].body["categoryId"] as? String == savedCategory.serverID)
     #expect(savedCalls[budgetPost].body["amountMinor"] as? Int == 12_500)
+
+    let transaction = FinanceTransaction(kind: .expense, amountMinor: 1_250, categoryID: category.id)
+    let jpeg = Data([0xff, 0xd8, 0xff, 0xd9])
+    try store.save(transaction, receiptImageData: jpeg)
+    await store.pushTransaction(transaction, accessToken: "test-token")
+    #expect(store.errorMessage == nil)
+    let receiptCall = try #require(calls.entries.first { $0.path == "PUT /finwise/api/transactions/transaction-1/receipt" })
+    #expect(receiptCall.body["imageBase64"] as? String == jpeg.base64EncodedString())
+
+    await store.syncTransactions(accessToken: "test-token")
+    #expect(store.receiptImageData(for: transaction.id) == nil)
+    await store.syncCategoriesBudgets(accessToken: "test-token")
+    #expect(store.budgets.first(where: { $0.id == budget.id }) == nil)
+    #expect(store.categories.contains(where: { $0.id == category.id }))
 }
 
 private final class SyncRequestLog {
@@ -205,6 +229,20 @@ private final class SyncURLProtocol: URLProtocol {
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func stopLoading() {}
+
+    static func readBodyStream(_ stream: InputStream?) -> Data? {
+        guard let stream else { return nil }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var bytes = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&bytes, maxLength: bytes.count)
+            if count <= 0 { break }
+            data.append(contentsOf: bytes.prefix(count))
+        }
+        return data
+    }
 
     override func startLoading() {
         guard let handler = Self.handler, let url = request.url else { return }
