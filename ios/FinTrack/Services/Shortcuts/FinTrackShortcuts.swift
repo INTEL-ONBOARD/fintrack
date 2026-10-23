@@ -2,13 +2,15 @@ import AppIntents
 import UIKit
 
 private enum ShortcutInputError: LocalizedError {
-    case invalidMessage
+    case missingMessage
+    case messageTooLong
     case invalidAmount
     case cannotOpenApp
 
     var errorDescription: String? {
         switch self {
-        case .invalidMessage: "Enter a financial message of at most 2,048 characters."
+        case .missingMessage: "Shortcuts did not pass the message text. Check the automation's Message Text input."
+        case .messageTooLong: "The message is over 2,048 characters."
         case .invalidAmount: "Enter a positive LKR amount with no more than two decimal places."
         case .cannotOpenApp: "FinTrack could not open the review screen."
         }
@@ -78,7 +80,8 @@ enum FinancialMessageImportHandler {
         reviewInbox: PendingMessageReviewInbox
     ) throws -> FinancialMessageImportOutcome {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, text.count <= 2_048 else { throw ShortcutInputError.invalidMessage }
+        guard !text.isEmpty else { throw ShortcutInputError.missingMessage }
+        guard text.count <= 2_048 else { throw ShortcutInputError.messageTooLong }
 
         let parsed = FinancialMessageParser.parse(text, sender: sender)
         let draft: FinancialMessageDraft

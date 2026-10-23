@@ -165,6 +165,20 @@ struct FinancialMessageParserTests {
         #expect(store.transactions.count == 2)
     }
 
+    @Test @MainActor func notificationImportExplainsMissingText() throws {
+        let store = FinanceStore(persistence: PersistenceController(inMemory: true))
+        let inbox = PendingMessageReviewInbox(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        do {
+            _ = try FinancialMessageImportHandler.process(
+                message: "  ", sender: "SAMPATHTXN", store: store, reviewInbox: inbox
+            )
+            Issue.record("Expected an error for missing notification text")
+        } catch {
+            #expect(error.localizedDescription.contains("did not pass the message text"))
+        }
+        #expect(store.transactions.isEmpty)
+    }
+
     @Test @MainActor func ambiguousNotificationWaitsForReview() throws {
         let store = FinanceStore(persistence: PersistenceController(inMemory: true))
         let inboxFileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
