@@ -714,7 +714,7 @@ final class FinanceStore: ObservableObject {
         for notification in notifications where notification.serverID == nil { await pushNotification(notification, accessToken: accessToken) }
     }
 
-    private func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
+    func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
         guard let remoteAmount = remote.amount, remoteAmount != 0 else { return nil }
 
         let kind: TransactionKind = remoteAmount < 0 ? .expense : .income
@@ -755,7 +755,10 @@ final class FinanceStore: ObservableObject {
             note: remote.note ?? "",
             paymentMethod: remote.account ?? "",
             source: .manual,
-            externalReference: externalReference
+            externalReference: externalReference,
+            latitude: existingTransaction?.latitude,
+            longitude: existingTransaction?.longitude,
+            locationName: existingTransaction?.locationName
         )
     }
 
