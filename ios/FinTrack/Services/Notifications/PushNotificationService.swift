@@ -39,6 +39,10 @@ final class PushNotificationService: NSObject, UIApplicationDelegate, UNUserNoti
     @Published private(set) var deviceToken: String?
     @Published private(set) var registrationError: String?
 
+    var supportsRemoteNotifications: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "RemoteNotificationsAvailable") as? Bool ?? true
+    }
+
     override init() {
         deviceToken = UserDefaults.standard.string(forKey: Self.deviceTokenKey)
         super.init()
@@ -53,11 +57,25 @@ final class PushNotificationService: NSObject, UIApplicationDelegate, UNUserNoti
     }
 
     @MainActor
+    func registerIfAuthorized() async {
+        guard supportsRemoteNotifications else {
+            registrationError = nil
+            return
+        }
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        if status == .authorized || status == .provisional {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+    }
+
+    @MainActor
     func requestPermissionAndRegister() async -> Bool {
         let center = UNUserNotificationCenter.current()
         let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         guard granted else { return false }
-        UIApplication.shared.registerForRemoteNotifications()
+        if supportsRemoteNotifications {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
         return true
     }
 
@@ -77,7 +95,9 @@ final class PushNotificationService: NSObject, UIApplicationDelegate, UNUserNoti
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        publish(notification: notification)
+        if notification.request.trigger is UNPushNotificationTrigger {
+            publish(notification: notification)
+        }
         completionHandler([.banner, .sound, .badge])
     }
 
@@ -86,7 +106,9 @@ final class PushNotificationService: NSObject, UIApplicationDelegate, UNUserNoti
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        publish(notification: response.notification)
+        if response.notification.request.trigger is UNPushNotificationTrigger {
+            publish(notification: response.notification)
+        }
         completionHandler()
     }
 

@@ -9,6 +9,12 @@ struct SessionsView: View {
 
     var body: some View {
         List {
+            Section {
+                BrandPageIntro(title: "Sessions", subtitle: "See where your account is signed in.", icon: "lock.shield")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+
             if isLoading {
                 ProgressView("Loading sessions...")
             } else if sessions.isEmpty {
@@ -20,7 +26,7 @@ struct SessionsView: View {
                         Image(systemName: session.sessionId == auth.currentSessionID ? "iphone" : "desktopcomputer")
                         Text(session.deviceLabel ?? "Unknown device").font(.headline)
                         if session.sessionId == auth.currentSessionID {
-                            Text("This device").font(.caption).foregroundStyle(FinTrackStyle.purple)
+                            Text("This device").font(.caption).foregroundStyle(FinTrackStyle.black)
                         }
                     }
                     if let lastActiveAt = session.lastActiveAt { Text("Last active: \(lastActiveAt)").font(.caption).foregroundStyle(.secondary) }
@@ -30,6 +36,7 @@ struct SessionsView: View {
                 .padding(.vertical, 4)
             }
         }
+        .finTrackGroupedScreen()
         .navigationTitle("Active Sessions")
         .task { await load() }
         .refreshable { await load() }

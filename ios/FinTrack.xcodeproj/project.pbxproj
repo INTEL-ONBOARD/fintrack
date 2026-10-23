@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B2C3D4E5F60718293A4B5C /* WelcomeArtwork.png in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* WelcomeArtwork.png */; };
+		A1B2C3D4E5F60718293A4B5E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5F /* LaunchScreen.storyboard */; };
+		B1C2D3E4F5061728394A5B6C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6D /* Assets.xcassets */; };
 		0572EE1A76461FB3C7830D89 /* SpendingMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC4C5FC5F8B32FD24060894 /* SpendingMapView.swift */; };
 		10BE64FF681DAAAD45EB05FD /* PasswordChangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A829F4145384C74516E1B5 /* PasswordChangeView.swift */; };
 		24EDA3003E7D4616DB8FBCD8 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51AA410FD8BFBE52979C792B /* TransactionsView.swift */; };
@@ -103,6 +106,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A1B2C3D4E5F60718293A4B5D /* WelcomeArtwork.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = WelcomeArtwork.png; path = Resources/WelcomeArtwork.png; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Resources/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		01D63B13E4EEDC2D626E5A76 /* FinanceMathTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinanceMathTests.swift; sourceTree = "<group>"; };
 		0A81711DA6049C975AB224B8 /* FinTrackWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FinTrackWidget.swift; sourceTree = "<group>"; };
 		1AD1EB21D07521ACE8FA52B9 /* ProfileSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileSettingsView.swift; path = Features/Settings/ProfileSettingsView.swift; sourceTree = "<group>"; };
@@ -200,6 +206,9 @@
 		73B56B95CD1BDE69EF00714D /* FinTrack */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60718293A4B5D /* WelcomeArtwork.png */,
+				A1B2C3D4E5F60718293A4B5F /* LaunchScreen.storyboard */,
+				B1C2D3E4F5061728394A5B6D /* Assets.xcassets */,
 				41289CC5F5655AC8D7258765 /* FinTrackApp.swift */,
 				34550D1FD3E4763239A38D89 /* FinTrackStyle.swift */,
 				AB83930049456B129298EE14 /* BudgetsView.swift */,
@@ -424,6 +433,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60718293A4B5C /* WelcomeArtwork.png in Resources */,
+				A1B2C3D4E5F60718293A4B5E /* LaunchScreen.storyboard in Resources */,
+				B1C2D3E4F5061728394A5B6C /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

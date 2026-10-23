@@ -3,10 +3,37 @@ import SwiftUI
 struct NotificationsView: View {
     @EnvironmentObject private var store: FinanceStore
     @EnvironmentObject private var auth: AuthSession
+    @EnvironmentObject private var pushService: PushNotificationService
     @State private var deleting: FinanceNotification?
+    @State private var alertMessage: String?
 
     var body: some View {
         List {
+            Section {
+                BrandPageIntro(title: "Notifications", subtitle: "Updates that deserve your attention.", icon: "bell")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+
+            Section("Device alerts") {
+                Button("Enable alerts on this iPhone", systemImage: "bell.badge") {
+                    Task {
+                        let allowed = await pushService.requestPermissionAndRegister()
+                        alertMessage = allowed
+                            ? (pushService.supportsRemoteNotifications
+                                ? "Alerts are allowed. FinTrack will register this device when available."
+                                : "Local alerts are allowed. Push delivery needs a build signed for Push Notifications.")
+                            : "Alerts are off. You can turn them on in iPhone Settings."
+                    }
+                }
+                if let alertMessage {
+                    Text(alertMessage).font(.footnote).foregroundStyle(.secondary)
+                }
+                if let error = pushService.registrationError {
+                    Text(error).font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+
             if store.notifications.isEmpty {
                 ContentUnavailableView("No notifications", systemImage: "bell", description: Text("Notifications from your FinMate account will appear here."))
             }
@@ -16,7 +43,7 @@ struct NotificationsView: View {
                 } label: {
                     HStack(alignment: .top, spacing: 12) {
                         Image(systemName: notification.read ? "bell" : "bell.badge.fill")
-                            .foregroundStyle(notification.read ? .secondary : FinTrackStyle.purple)
+                            .foregroundStyle(notification.read ? .secondary : FinTrackStyle.black)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(notification.title).font(.headline)
                             Text(notification.body).font(.subheadline).foregroundStyle(.secondary)
@@ -31,6 +58,7 @@ struct NotificationsView: View {
                 .contextMenu { Button("Delete", systemImage: "trash", role: .destructive) { deleting = notification } }
             }
         }
+        .finTrackGroupedScreen()
         .navigationTitle("Notifications")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

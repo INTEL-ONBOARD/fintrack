@@ -2,6 +2,8 @@ import Foundation
 
 enum RealtimeSyncEvent: Equatable {
     case transactions
+    case categories
+    case budgets
     case goals
     case bills
     case accounts
@@ -12,6 +14,8 @@ enum RealtimeSyncEvent: Equatable {
     init(serverEventName: String) {
         switch serverEventName.split(separator: ":").first.map(String.init) {
         case "transactions": self = .transactions
+        case "categories": self = .categories
+        case "budgets": self = .budgets
         case "goals": self = .goals
         case "bills": self = .bills
         case "accounts": self = .accounts

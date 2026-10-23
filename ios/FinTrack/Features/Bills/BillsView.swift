@@ -9,6 +9,8 @@ struct BillsView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Bills", subtitle: "Stay ahead of upcoming payments.", icon: "calendar")
+
             VStack(alignment: .leading, spacing: 14) {
                 if store.bills.isEmpty { ContentUnavailableView("No bills", systemImage: "calendar.badge.clock", description: Text("Add bills and mark them paid each month.")) }
                 ForEach(store.bills) { bill in
@@ -30,6 +32,7 @@ struct BillsView: View {
             }.padding(16)
         }
         .background(FinTrackStyle.background)
+        .finTrackGroupedScreen()
         .navigationTitle("Bills")
         .sheet(isPresented: $showingEditor) { BillEditorView() }
         .sheet(item: $editing) { BillEditorView(bill: $0) }
@@ -63,6 +66,11 @@ private struct BillEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Bill details", subtitle: "Keep the next payment in sight.", icon: "calendar")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 TextField("Bill name", text: $name)
                 TextField("Amount in LKR", text: $amount).keyboardType(.decimalPad)
                 Stepper("Due day: \(dueDay)", value: $dueDay, in: 1...31)
@@ -70,6 +78,7 @@ private struct BillEditorView: View {
                 Toggle("Paid", isOn: $paid)
                 Button("Save Bill") { save() }.buttonStyle(PrimaryButtonStyle()).listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
             }
+            .finTrackGroupedScreen()
             .navigationTitle(bill == nil ? "Add Bill" : "Edit Bill").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
             .alert("Unable to save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }

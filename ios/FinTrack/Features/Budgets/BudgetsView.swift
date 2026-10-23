@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BudgetsView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     @State private var selectedMonth = Date.now
     @State private var showingEditor = false
     @State private var editing: FinanceBudget?
@@ -16,6 +17,8 @@ struct BudgetsView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Budgets", subtitle: "Know your limits before you spend.", icon: "chart.pie")
+
             VStack(alignment: .leading, spacing: 16) {
                 DatePicker("Budget month", selection: $selectedMonth, displayedComponents: .date)
                     .datePickerStyle(.compact)
@@ -37,11 +40,11 @@ struct BudgetsView: View {
                                     .font(.headline)
                                 Spacer()
                                 Text("\(Int(FinanceMath.budgetProgress(spentMinor: spent, limitMinor: budget.amountMinor) * 100))%")
-                                    .foregroundStyle(FinTrackStyle.purple)
+                                    .foregroundStyle(FinTrackStyle.black)
                                     .font(.subheadline.bold())
                             }
                             ProgressView(value: FinanceMath.budgetProgress(spentMinor: spent, limitMinor: budget.amountMinor))
-                                .tint(spent > budget.amountMinor ? .red : FinTrackStyle.purple)
+                                .tint(spent > budget.amountMinor ? .red : FinTrackStyle.black)
                                 .padding(.vertical, 6)
                             HStack {
                                 Text("\(Money.formatted(spent)) spent")
@@ -66,7 +69,9 @@ struct BudgetsView: View {
             .padding(16)
         }
         .background(FinTrackStyle.background)
+        .finTrackGroupedScreen()
         .navigationTitle("Budgets")
+        .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showingEditor) { BudgetEditorView(month: selectedMonth) }
         .sheet(item: $editing) { BudgetEditorView(month: selectedMonth, budget: $0) }
         .confirmationDialog("Delete this budget?", isPresented: Binding(
@@ -76,6 +81,7 @@ struct BudgetsView: View {
                 guard let deleting else { return }
                 do {
                     try store.delete(deleting)
+                    if let token = auth.token() { Task { await store.syncCategoriesBudgets(accessToken: token) } }
                 } catch { store.errorMessage = error.localizedDescription }
                 self.deleting = nil
             }
@@ -86,6 +92,7 @@ struct BudgetsView: View {
 private struct BudgetEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var auth: AuthSession
     let month: Date
     let budget: FinanceBudget?
     @State private var categoryID: UUID?
@@ -103,6 +110,11 @@ private struct BudgetEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Budget details", subtitle: "Choose a limit for the month.", icon: "chart.pie")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 Picker("Category", selection: $categoryID) {
                     Text("Overall budget").tag(Optional<UUID>.none)
                     ForEach(store.categories.filter { $0.kind == .expense }) { category in
@@ -116,6 +128,7 @@ private struct BudgetEditorView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }
+            .finTrackGroupedScreen()
             .navigationTitle(budget == nil ? "Add Budget" : "Edit Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
@@ -139,6 +152,7 @@ private struct BudgetEditorView: View {
         value.amountMinor = amountMinor
         do {
             try store.save(value)
+            if let token = auth.token() { Task { await store.syncCategoriesBudgets(accessToken: token) } }
             dismiss()
         } catch { errorMessage = error.localizedDescription }
     }

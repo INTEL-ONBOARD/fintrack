@@ -9,6 +9,7 @@ enum FinanceStoreError: LocalizedError {
     case duplicateImport
     case categoryInUse
     case missingLocalModel
+    case invalidReceiptImage
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +20,7 @@ enum FinanceStoreError: LocalizedError {
         case .duplicateImport: "This imported transaction already exists."
         case .categoryInUse: "This category is used by a transaction or budget."
         case .missingLocalModel: "The local data model is unavailable."
+        case .invalidReceiptImage: "The receipt image is too large to save."
         }
     }
 }
@@ -44,17 +46,28 @@ final class FinanceStore: ObservableObject {
     }
 
     var pendingResourceCount: Int {
-        accounts.filter { $0.serverID == nil }.count
+        categories.filter { $0.serverID == nil || $0.needsSync }.count
+            + budgets.filter { $0.serverID == nil || $0.needsSync }.count
+            + accounts.filter { $0.serverID == nil }.count
             + goals.filter { $0.serverID == nil }.count
             + bills.filter { $0.serverID == nil }.count
             + notifications.filter { $0.serverID == nil }.count
+            + pendingLocalCount(entity: "PendingDeletion")
+            + pendingLocalCount(entity: "Receipt", predicate: NSPredicate(format: "syncedToServerID == nil"))
+    }
+
+    private func pendingLocalCount(entity: String, predicate: NSPredicate? = nil) -> Int {
+        let request = NSFetchRequest<NSManagedObject>(entityName: entity)
+        request.predicate = predicate
+        return (try? context.count(for: request)) ?? 0
     }
 
     private let context: NSManagedObjectContext
-    private let api = FinMateAPIClient()
+    private let api: FinMateAPIClient
 
-    init(persistence: PersistenceController = .shared) {
+    init(persistence: PersistenceController = .shared, api: FinMateAPIClient = FinMateAPIClient()) {
         context = persistence.container.viewContext
+        self.api = api
         if let data = UserDefaults.standard.data(forKey: "financeUserSettings"),
            let saved = try? JSONDecoder().decode(FinanceUserSettings.self, from: data) {
             settings = saved
@@ -101,7 +114,7 @@ final class FinanceStore: ObservableObject {
     }
 
     func deleteAllLocalData() throws {
-        for entityName in ["Transaction", "Category", "Budget", "Account", "Goal", "Bill", "Notification"] {
+        for entityName in ["Transaction", "Receipt", "Category", "Budget", "PendingDeletion", "Account", "Goal", "Bill", "Notification"] {
             let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
             for object in try context.fetch(request) {
                 context.delete(object)
@@ -115,8 +128,11 @@ final class FinanceStore: ObservableObject {
         try reload()
     }
 
-    func save(_ transaction: FinanceTransaction) throws {
+    func save(_ transaction: FinanceTransaction, receiptImageData: Data? = nil) throws {
         guard transaction.amountMinor > 0 else { throw FinanceStoreError.invalidAmount }
+        if let receiptImageData, receiptImageData.isEmpty || receiptImageData.count > 2_000_000 {
+            throw FinanceStoreError.invalidReceiptImage
+        }
         if let reference = transaction.externalReference,
            transactions.contains(where: {
                $0.id != transaction.id && $0.source == transaction.source && sameReference($0.externalReference, reference)
@@ -140,12 +156,26 @@ final class FinanceStore: ObservableObject {
         entity.latitude = transaction.latitude.map(NSNumber.init(value:))
         entity.longitude = transaction.longitude.map(NSNumber.init(value:))
         entity.locationName = transaction.locationName
+        if let receiptImageData {
+            let receipt = try find(ReceiptEntity.self, named: "Receipt", id: transaction.id)
+                ?? insert(ReceiptEntity.self, named: "Receipt")
+            receipt.id = transaction.id
+            receipt.imageData = receiptImageData
+            receipt.syncedToServerID = nil
+        }
         try persist()
+    }
+
+    func receiptImageData(for transactionID: UUID) -> Data? {
+        (try? find(ReceiptEntity.self, named: "Receipt", id: transactionID))?.imageData
     }
 
     func delete(_ transaction: FinanceTransaction) throws {
         if let entity = try find(TransactionEntity.self, named: "Transaction", id: transaction.id) {
             context.delete(entity)
+            if let receipt = try find(ReceiptEntity.self, named: "Receipt", id: transaction.id) {
+                context.delete(receipt)
+            }
             try persist()
         }
     }
@@ -178,8 +208,12 @@ final class FinanceStore: ObservableObject {
             for remoteTransaction in remoteTransactions {
                 guard let localTransaction = localTransaction(from: remoteTransaction) else { continue }
                 try save(localTransaction)
+                if remoteTransaction.hasReceipt == true {
+                    try await downloadReceiptIfNeeded(for: localTransaction, remoteID: remoteTransaction.id, accessToken: accessToken)
+                }
             }
             await uploadPendingTransactions(accessToken: accessToken)
+            try await uploadPendingReceipts(accessToken: accessToken)
         } catch {
             errorMessage = "Transaction sync failed: \(error.localizedDescription)"
         }
@@ -190,12 +224,110 @@ final class FinanceStore: ObservableObject {
         isSyncingAll = true
         errorMessage = nil
         defer { isSyncingAll = false }
+        await syncCategoriesBudgets(accessToken: accessToken)
         await syncTransactions(accessToken: accessToken)
         await syncResources(accessToken: accessToken)
         await syncSettings(accessToken: accessToken)
         guard errorMessage == nil else { return }
         lastSyncAt = .now
         UserDefaults.standard.set(lastSyncAt, forKey: "financeLastSyncAt")
+    }
+
+    func syncCategoriesBudgets(accessToken: String) async {
+        do {
+            try await flushPendingDeletions(accessToken: accessToken)
+            let remoteCategories = try await api.listCategories(accessToken: accessToken)
+            for remote in remoteCategories {
+                guard let kind = TransactionKind(rawValue: remote.kind) else { continue }
+                let matched = categories.first {
+                    $0.serverID == remote.id || $0.id.uuidString.caseInsensitiveCompare(remote.clientId ?? "") == .orderedSame ||
+                    ($0.kind == kind && $0.name.localizedCaseInsensitiveCompare(remote.name) == .orderedSame)
+                }
+                if let matched, matched.needsSync {
+                    try markCategoryServerID(remote.id, localID: matched.id)
+                } else {
+                    try save(FinanceCategory(
+                        id: matched?.id ?? UUID(uuidString: remote.clientId ?? "") ?? UUID(),
+                        serverID: remote.id, name: remote.name, kind: kind,
+                        color: remote.color, needsSync: false
+                    ), fromServer: true)
+                }
+            }
+            for category in categories where category.serverID == nil || category.needsSync {
+                if category.serverID != nil {
+                    try await api.updateCategory(category, accessToken: accessToken)
+                    for transaction in transactions where transaction.categoryID == category.id && apiID(from: transaction.externalReference) != nil {
+                        try await pushRemoteTransaction(transaction, accessToken: accessToken)
+                    }
+                    try markCategoryServerID(category.serverID!, localID: category.id, synced: true)
+                } else {
+                    let remote = try await api.createCategory(category, accessToken: accessToken)
+                    try markCategoryServerID(remote.id, localID: category.id, synced: true)
+                }
+            }
+
+            let remoteBudgets = try await api.listBudgets(accessToken: accessToken)
+            for remote in remoteBudgets {
+                let localCategoryID = remote.categoryId.flatMap { serverID in
+                    categories.first(where: { $0.serverID == serverID })?.id
+                }
+                if remote.categoryId != nil && localCategoryID == nil { continue }
+                let matched = budgets.first {
+                    $0.serverID == remote.id || $0.id.uuidString.caseInsensitiveCompare(remote.clientId ?? "") == .orderedSame ||
+                    ($0.month == remote.month && $0.categoryID == localCategoryID)
+                }
+                if let matched, matched.needsSync {
+                    try markBudgetServerID(remote.id, localID: matched.id)
+                } else {
+                    try save(FinanceBudget(
+                        id: matched?.id ?? UUID(uuidString: remote.clientId ?? "") ?? UUID(),
+                        serverID: remote.id, month: remote.month,
+                        categoryID: localCategoryID, amountMinor: remote.amountMinor,
+                        currency: remote.currency, needsSync: false
+                    ), fromServer: true)
+                }
+            }
+            for budget in budgets where budget.serverID == nil || budget.needsSync {
+                let categoryServerID = budget.categoryID.flatMap { localID in
+                    categories.first(where: { $0.id == localID })?.serverID
+                }
+                if budget.categoryID != nil && categoryServerID == nil { continue }
+                if let serverID = budget.serverID {
+                    try await api.updateBudget(budget, categoryServerID: categoryServerID, accessToken: accessToken)
+                    try markBudgetServerID(serverID, localID: budget.id, synced: true)
+                } else {
+                    let remote = try await api.createBudget(budget, categoryServerID: categoryServerID, accessToken: accessToken)
+                    try markBudgetServerID(remote.id, localID: budget.id, synced: true)
+                }
+            }
+        } catch {
+            errorMessage = "Category and budget sync failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func flushPendingDeletions(accessToken: String) async throws {
+        let request = NSFetchRequest<PendingDeletionEntity>(entityName: "PendingDeletion")
+        let pending = try context.fetch(request).sorted { $0.resource == "budgets" && $1.resource != "budgets" }
+        for item in pending {
+            if item.resource == "budgets" { try await api.deleteBudget(id: item.serverID, accessToken: accessToken) }
+            else if item.resource == "categories" { try await api.deleteCategory(id: item.serverID, accessToken: accessToken) }
+            context.delete(item)
+            try context.save()
+        }
+    }
+
+    private func markCategoryServerID(_ serverID: String, localID: UUID, synced: Bool = false) throws {
+        guard let entity = try find(CategoryEntity.self, named: "Category", id: localID) else { return }
+        entity.serverID = serverID
+        if synced { entity.needsSync = false }
+        try persist()
+    }
+
+    private func markBudgetServerID(_ serverID: String, localID: UUID, synced: Bool = false) throws {
+        guard let entity = try find(BudgetEntity.self, named: "Budget", id: localID) else { return }
+        entity.serverID = serverID
+        if synced { entity.needsSync = false }
+        try persist()
     }
 
     func retryPendingTransactions(accessToken: String) async {
@@ -205,7 +337,7 @@ final class FinanceStore: ObservableObject {
         await uploadPendingTransactions(accessToken: accessToken)
     }
 
-    func save(_ budget: FinanceBudget) throws {
+    func save(_ budget: FinanceBudget, fromServer: Bool = false) throws {
         guard budget.amountMinor > 0 else { throw FinanceStoreError.invalidAmount }
         guard !budgets.contains(where: {
             $0.id != budget.id && $0.month == budget.month && $0.categoryID == budget.categoryID
@@ -213,21 +345,29 @@ final class FinanceStore: ObservableObject {
         let entity = try find(BudgetEntity.self, named: "Budget", id: budget.id)
             ?? insert(BudgetEntity.self, named: "Budget")
         entity.id = budget.id
+        entity.serverID = budget.serverID ?? entity.serverID
         entity.month = budget.month
         entity.categoryID = budget.categoryID
         entity.amountMinor = budget.amountMinor
         entity.currency = budget.currency
+        entity.needsSync = !fromServer
         try persist()
     }
 
-    func delete(_ budget: FinanceBudget) throws {
+    func delete(_ budget: FinanceBudget, fromServer: Bool = false) throws {
         if let entity = try find(BudgetEntity.self, named: "Budget", id: budget.id) {
+            if !fromServer, let serverID = entity.serverID {
+                let pending = try insert(PendingDeletionEntity.self, named: "PendingDeletion")
+                pending.id = UUID()
+                pending.resource = "budgets"
+                pending.serverID = serverID
+            }
             context.delete(entity)
             try persist()
         }
     }
 
-    func save(_ category: FinanceCategory) throws {
+    func save(_ category: FinanceCategory, fromServer: Bool = false) throws {
         let name = category.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { throw FinanceStoreError.invalidCategory }
         guard !categories.contains(where: {
@@ -236,18 +376,26 @@ final class FinanceStore: ObservableObject {
         let entity = try find(CategoryEntity.self, named: "Category", id: category.id)
             ?? insert(CategoryEntity.self, named: "Category")
         entity.id = category.id
+        entity.serverID = category.serverID ?? entity.serverID
         entity.name = name
         entity.kind = category.kind.rawValue
         entity.color = category.color
+        entity.needsSync = !fromServer
         try persist()
     }
 
-    func delete(_ category: FinanceCategory) throws {
+    func delete(_ category: FinanceCategory, fromServer: Bool = false) throws {
         guard !transactions.contains(where: { $0.categoryID == category.id }),
               !budgets.contains(where: { $0.categoryID == category.id }) else {
             throw FinanceStoreError.categoryInUse
         }
         if let entity = try find(CategoryEntity.self, named: "Category", id: category.id) {
+            if !fromServer, let serverID = entity.serverID {
+                let pending = try insert(PendingDeletionEntity.self, named: "PendingDeletion")
+                pending.id = UUID()
+                pending.resource = "categories"
+                pending.serverID = serverID
+            }
             context.delete(entity)
             try persist()
         }
@@ -585,16 +733,17 @@ final class FinanceStore: ObservableObject {
 
     private static func category(_ entity: CategoryEntity) -> FinanceCategory {
         FinanceCategory(
-            id: entity.id, name: entity.name,
-            kind: TransactionKind(rawValue: entity.kind) ?? .expense, color: entity.color
+            id: entity.id, serverID: entity.serverID, name: entity.name,
+            kind: TransactionKind(rawValue: entity.kind) ?? .expense, color: entity.color,
+            needsSync: entity.needsSync
         )
     }
 
     private static func budget(_ entity: BudgetEntity) -> FinanceBudget {
         FinanceBudget(
-            id: entity.id, month: entity.month,
+            id: entity.id, serverID: entity.serverID, month: entity.month,
             categoryID: entity.categoryID, amountMinor: entity.amountMinor,
-            currency: entity.currency
+            currency: entity.currency, needsSync: entity.needsSync
         )
     }
 
@@ -714,7 +863,7 @@ final class FinanceStore: ObservableObject {
         for notification in notifications where notification.serverID == nil { await pushNotification(notification, accessToken: accessToken) }
     }
 
-    private func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
+    func localTransaction(from remote: RemoteTransaction) -> FinanceTransaction? {
         guard let remoteAmount = remote.amount, remoteAmount != 0 else { return nil }
 
         let kind: TransactionKind = remoteAmount < 0 ? .expense : .income
@@ -755,7 +904,10 @@ final class FinanceStore: ObservableObject {
             note: remote.note ?? "",
             paymentMethod: remote.account ?? "",
             source: .manual,
-            externalReference: externalReference
+            externalReference: externalReference,
+            latitude: existingTransaction?.latitude,
+            longitude: existingTransaction?.longitude,
+            locationName: existingTransaction?.locationName
         )
     }
 
@@ -800,6 +952,39 @@ final class FinanceStore: ObservableObject {
             )
             try attachRemoteID(remote.id, to: transaction.id, originalReference: transaction.externalReference)
         }
+        let serverID = apiID(from: transactions.first(where: { $0.id == transaction.id })?.externalReference)
+        if let serverID, let receipt = try find(ReceiptEntity.self, named: "Receipt", id: transaction.id),
+           receipt.syncedToServerID != serverID {
+            try await api.uploadReceipt(receipt.imageData, transactionID: serverID, accessToken: accessToken)
+            receipt.syncedToServerID = serverID
+            try context.save()
+        }
+    }
+
+    private func uploadPendingReceipts(accessToken: String) async throws {
+        let request = NSFetchRequest<ReceiptEntity>(entityName: "Receipt")
+        for receipt in try context.fetch(request) {
+            guard let transaction = transactions.first(where: { $0.id == receipt.id }),
+                  let serverID = apiID(from: transaction.externalReference),
+                  receipt.syncedToServerID != serverID else { continue }
+            try await api.uploadReceipt(receipt.imageData, transactionID: serverID, accessToken: accessToken)
+            receipt.syncedToServerID = serverID
+            try context.save()
+        }
+    }
+
+    private func downloadReceiptIfNeeded(for transaction: FinanceTransaction, remoteID: String, accessToken: String) async throws {
+        if let local = try find(ReceiptEntity.self, named: "Receipt", id: transaction.id) {
+            if local.syncedToServerID == nil { return }
+            if local.syncedToServerID == remoteID { return }
+        }
+        let data = try await api.getReceipt(transactionID: remoteID, accessToken: accessToken)
+        let receipt = try find(ReceiptEntity.self, named: "Receipt", id: transaction.id)
+            ?? insert(ReceiptEntity.self, named: "Receipt")
+        receipt.id = transaction.id
+        receipt.imageData = data
+        receipt.syncedToServerID = remoteID
+        try context.save()
     }
 
     private func attachRemoteID(_ serverID: String, to localID: UUID, originalReference: String?) throws {

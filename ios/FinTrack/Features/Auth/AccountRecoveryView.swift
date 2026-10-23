@@ -14,6 +14,11 @@ struct AccountRecoveryView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Account help", subtitle: "Get back to your finance data.", icon: "key")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 Picker("Action", selection: $mode) {
                     Text("Reset password").tag(0)
                     Text("Verify email").tag(1)
@@ -38,6 +43,7 @@ struct AccountRecoveryView: View {
                 if isLoading { ProgressView() }
                 if let message { Text(message).foregroundStyle(FinTrackStyle.green) }
             }
+            .finTrackGroupedScreen()
             .navigationTitle("Account help")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Close") { dismiss() } } }

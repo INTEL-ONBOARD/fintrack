@@ -1,5 +1,6 @@
 import CoreLocation
 import SwiftUI
+import UIKit
 
 struct TransactionEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -9,6 +10,7 @@ struct TransactionEditorView: View {
     private let original: FinanceTransaction?
     private let isReviewDraft: Bool
     private let reviewWarning: String?
+    private let receiptImageData: Data?
     @State private var kind: TransactionKind
     @State private var amountText: String
     @State private var categoryID: UUID?
@@ -26,11 +28,16 @@ struct TransactionEditorView: View {
     @StateObject private var voice = VoiceTransactionService()
     @State private var voiceWarning: String?
 
-    init(transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false, reviewWarning: String? = nil) {
+    init(
+        transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false,
+        reviewWarning: String? = nil, initialKind: TransactionKind = .expense,
+        receiptImageData: Data? = nil
+    ) {
         original = transaction
         self.isReviewDraft = isReviewDraft
         self.reviewWarning = reviewWarning
-        _kind = State(initialValue: transaction?.kind ?? .expense)
+        self.receiptImageData = receiptImageData
+        _kind = State(initialValue: transaction?.kind ?? initialKind)
         let amount = transaction.map {
             NSDecimalNumber(value: $0.amountMinor).dividing(by: NSDecimalNumber(value: 100)).stringValue
         } ?? ""
@@ -52,6 +59,11 @@ struct TransactionEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Transaction", subtitle: "Record the details that matter.", icon: "arrow.left.arrow.right")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 if let warning = reviewWarning ?? voiceWarning {
                     Section {
                         Text(warning)
@@ -130,6 +142,20 @@ struct TransactionEditorView: View {
                     TextField("Payment method", text: $paymentMethod)
                 }
 
+                if let data = receiptImageData ?? original.flatMap({ store.receiptImageData(for: $0.id) }),
+                   let image = UIImage(data: data) {
+                    Section("Receipt") {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 220)
+                            .accessibilityLabel("Attached receipt")
+                        Text("Saved on this device.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 Section("Location") {
                     Button {
                         showingLocationPicker = true
@@ -154,6 +180,7 @@ struct TransactionEditorView: View {
                         .listRowBackground(Color.clear)
                 }
             }
+            .finTrackGroupedScreen()
             .navigationTitle(isReviewDraft ? "Review Transaction" : (original == nil ? "Add Transaction" : "Edit Transaction"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
@@ -250,7 +277,7 @@ struct TransactionEditorView: View {
         transaction.longitude = transactionCoordinate?.longitude
         transaction.locationName = transactionLocationName
         do {
-            try store.save(transaction)
+            try store.save(transaction, receiptImageData: receiptImageData)
             if let accessToken = auth.token() {
                 Task { await store.pushTransaction(transaction, accessToken: accessToken) }
             }

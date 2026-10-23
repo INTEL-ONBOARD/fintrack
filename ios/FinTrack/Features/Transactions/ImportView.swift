@@ -11,6 +11,7 @@ struct ImportView: View {
     @State private var isScanning = false
     @State private var showingCamera = false
     @State private var reviewDraft: FinanceTransaction?
+    @State private var pendingReceiptImageData: Data?
     @State private var statusMessage: String?
     @State private var selectedStatementData: Data?
     @State private var selectedStatementName = ""
@@ -23,6 +24,8 @@ struct ImportView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Import", subtitle: "Bring in messages, statements and receipts.", icon: "square.and.arrow.down")
+
             VStack(alignment: .leading, spacing: 18) {
                 Text("Review imported details before saving them to your ledger.")
                     .foregroundStyle(.secondary)
@@ -98,7 +101,10 @@ struct ImportView: View {
             Task { await scan(item) }
         }
         .sheet(item: $reviewDraft) {
-            TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: statusMessage)
+            TransactionEditorView(
+                transaction: $0, isReviewDraft: true, reviewWarning: statusMessage,
+                receiptImageData: pendingReceiptImageData
+            )
         }
         .sheet(isPresented: $showingCamera) {
             CameraPicker(
@@ -124,6 +130,7 @@ struct ImportView: View {
     }
 
     private func parseMessage() {
+        pendingReceiptImageData = nil
         switch FinancialMessageParser.parse(messageText) {
         case .ignored(let reason):
             statusMessage = "No transaction could be imported (\(String(describing: reason)))."
@@ -157,9 +164,14 @@ struct ImportView: View {
 
     private func scan(imageData: Data) async {
         isScanning = true
+        pendingReceiptImageData = nil
         defer { isScanning = false }
         do {
             let text = try await ReceiptTextRecognizer().recognizeText(in: imageData)
+            guard let savedImage = compressedReceipt(from: imageData) else {
+                statusMessage = "This receipt image could not be saved. Choose a smaller image."
+                return
+            }
             let draft = ReceiptParser.parse(text)
             var date = Date.now
             if let parsedDate = draft.date,
@@ -167,6 +179,7 @@ struct ImportView: View {
                 year: parsedDate.year, month: parsedDate.month, day: parsedDate.day,
                 hour: 12
                )) { date = value }
+            pendingReceiptImageData = savedImage
             reviewDraft = FinanceTransaction(
                 kind: .expense, amountMinor: draft.totalMinorUnits ?? 0,
                 occurredAt: date, merchant: draft.merchant ?? "",
@@ -178,6 +191,23 @@ struct ImportView: View {
         } catch {
             statusMessage = error.localizedDescription
         }
+    }
+
+    private func compressedReceipt(from data: Data) -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        for edge in [CGFloat(1600), 1200, 900] {
+            let scale = min(1, edge / max(image.size.width, image.size.height))
+            let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+                image.draw(in: CGRect(origin: .zero, size: size))
+            }
+            if let jpeg = resized.jpegData(compressionQuality: 0.7), jpeg.count <= 2_000_000 {
+                return jpeg
+            }
+        }
+        return nil
     }
 
     @ViewBuilder

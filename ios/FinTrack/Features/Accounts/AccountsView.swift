@@ -9,6 +9,8 @@ struct AccountsView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Accounts", subtitle: "Keep track of cash and bank balances.", icon: "building.columns")
+
             VStack(alignment: .leading, spacing: 14) {
                 if store.accounts.isEmpty {
                     ContentUnavailableView("No accounts", systemImage: "building.columns", description: Text("Add your bank or cash accounts."))
@@ -36,6 +38,7 @@ struct AccountsView: View {
             .padding(16)
         }
         .background(FinTrackStyle.background)
+        .finTrackGroupedScreen()
         .navigationTitle("Accounts")
         .sheet(isPresented: $showingEditor) { AccountEditorView() }
         .sheet(item: $editing) { AccountEditorView(account: $0) }
@@ -71,12 +74,18 @@ private struct AccountEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Account details", subtitle: "Name your account and set its balance.", icon: "building.columns")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 TextField("Account name", text: $name)
                 Picker("Type", selection: $type) { ForEach(FinanceAccountType.allCases) { Text($0.title).tag($0) } }
                 TextField("Balance in LKR", text: $balance).keyboardType(.decimalPad)
                 TextField("Bank", text: $bank)
                 Button("Save Account") { save() }.buttonStyle(PrimaryButtonStyle()).listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
             }
+            .finTrackGroupedScreen()
             .navigationTitle(account == nil ? "Add Account" : "Edit Account")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }

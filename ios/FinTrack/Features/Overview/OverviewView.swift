@@ -3,6 +3,8 @@ import SwiftUI
 struct OverviewView: View {
     @EnvironmentObject private var store: FinanceStore
     @State private var showingEditor = false
+    @State private var entryKind: TransactionKind = .expense
+    @State private var selectedTransaction: FinanceTransaction?
 
     private var period: DateInterval { FinanceMath.monthInterval(containing: .now) }
     private var totals: ReportTotals {
@@ -22,114 +24,163 @@ struct OverviewView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(Date.now.formatted(.dateTime.weekday(.wide)))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text("Here’s your money overview")
-                        .font(.title2.bold())
-                        .foregroundStyle(FinTrackStyle.ink)
-                }
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 17) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.55))
+                            Text("FinTrack")
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(.white)
+                        }
+                        Spacer()
+                        NavigationLink {
+                            TransactionsView()
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                        }
+                        .accessibilityLabel("Search transactions")
+                    }
+                    .padding(.top, 24)
 
-                FinanceCard {
-                    HStack(alignment: .top) {
+                    Text("THIS MONTH’S NET CASH FLOW")
+                        .font(.caption2.weight(.bold))
+                        .tracking(1.4)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .padding(.top, 8)
+                    Text(Money.formatted(totals.netMinor))
+                        .font(.system(size: 43, weight: .medium, design: .rounded))
+                        .minimumScaleFactor(0.65)
+                        .lineLimit(1)
+                        .foregroundStyle(.white)
+                        .contentTransition(.numericText())
+
+                    HStack(spacing: 10) {
+                        Button {
+                            entryKind = .expense
+                            showingEditor = true
+                        } label: { Label("Add expense", systemImage: "plus") }
+                            .buttonStyle(DarkPillButtonStyle())
+                        Button {
+                            entryKind = .income
+                            showingEditor = true
+                        } label: { Label("Add income", systemImage: "arrow.down.left") }
+                            .buttonStyle(DarkPillButtonStyle())
+                    }
+                    .padding(.bottom, 54)
+                }
+                .padding(.horizontal, FinTrackStyle.pageInset)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(FinTrackStyle.black, in: RoundedRectangle(cornerRadius: 30))
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+
+                VStack(alignment: .leading, spacing: 24) {
+                    Capsule()
+                        .fill(FinTrackStyle.border)
+                        .frame(width: 34, height: 5)
+                        .frame(maxWidth: .infinity)
+                    HStack {
+                        Text("Transactions")
+                            .font(.title2.weight(.semibold))
+                        Spacer()
+                        NavigationLink("See all") { TransactionsView() }
+                            .font(.subheadline)
+                    }
+
+                    let recent = Array(store.transactions.prefix(5))
+                    if recent.isEmpty {
+                        Text("Your transactions will appear here.")
+                            .foregroundStyle(FinTrackStyle.muted)
+                            .frame(maxWidth: .infinity, minHeight: 120)
+                    } else {
+                        VStack(spacing: 18) {
+                            ForEach(recent) { transaction in
+                                Button {
+                                    selectedTransaction = transaction
+                                } label: {
+                                    TransactionRow(
+                                        transaction: transaction,
+                                        categoryName: store.categories.first(where: { $0.id == transaction.categoryID })?.name ?? transaction.kind.title
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    Divider()
+                    HStack {
                         summaryItem("Income", amount: totals.incomeMinor, color: FinTrackStyle.green)
                         Spacer()
                         summaryItem("Expenses", amount: totals.expenseMinor, color: FinTrackStyle.ink)
                     }
-                    Divider().padding(.vertical, 8)
-                    Text("Net cash flow").font(.caption).foregroundStyle(.secondary)
-                    Text(Money.formatted(totals.netMinor))
-                        .font(.title3.bold())
-                        .foregroundStyle(totals.netMinor >= 0 ? FinTrackStyle.purple : FinTrackStyle.ink)
-                }
 
-                NavigationLink {
-                    BudgetsView()
-                } label: {
-                    FinanceCard {
-                        HStack {
-                            Text("Monthly budget").font(.headline)
-                            Spacer()
+                    NavigationLink {
+                        BudgetsView()
+                    } label: {
+                        FinanceCard {
+                            HStack {
+                                Text("Monthly budget").font(.headline)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                            }
                             if let overallBudget {
                                 let spent = FinanceMath.spending(for: store.transactions, categoryID: nil, from: period.start, to: period.end)
-                                Text("\(Int(FinanceMath.budgetProgress(spentMinor: spent, limitMinor: overallBudget.amountMinor) * 100))%")
-                                    .font(.subheadline.bold())
-                                    .foregroundStyle(FinTrackStyle.purple)
+                                ProgressView(value: FinanceMath.budgetProgress(spentMinor: spent, limitMinor: overallBudget.amountMinor))
+                                    .tint(FinTrackStyle.black)
+                                Text("\(Money.formatted(overallBudget.amountMinor - spent)) remaining")
+                                    .font(.caption)
+                                    .foregroundStyle(FinTrackStyle.muted)
+                            } else {
+                                Text("Set a monthly limit to follow your spending.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(FinTrackStyle.muted)
                             }
                         }
-                        if let overallBudget {
-                            let spent = FinanceMath.spending(for: store.transactions, categoryID: nil, from: period.start, to: period.end)
-                            ProgressView(value: FinanceMath.budgetProgress(spentMinor: spent, limitMinor: overallBudget.amountMinor))
-                                .tint(FinTrackStyle.purple)
-                                .padding(.vertical, 5)
-                            Text("\(Money.formatted(overallBudget.amountMinor - spent)) remaining")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Set a monthly limit to follow your spending.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
                     }
-                }
-                .buttonStyle(.plain)
+                    .buttonStyle(.plain)
 
-                if !insights.isEmpty {
-                    FinanceCard {
-                        Text("On-device insights")
-                            .font(.headline)
-                        Text("These suggestions are calculated locally from your transaction history.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        ForEach(insights) { insight in
-                            HStack(alignment: .top, spacing: 10) {
-                                Image(systemName: iconName(for: insight.level))
-                                    .foregroundStyle(color(for: insight.level))
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(insight.title).font(.subheadline.bold())
-                                    Text(insight.message)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                    if !insights.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Insights").font(.title3.weight(.semibold))
+                            ForEach(insights) { insight in
+                                HStack(alignment: .top, spacing: 12) {
+                                    Image(systemName: iconName(for: insight.level))
+                                        .foregroundStyle(color(for: insight.level))
+                                        .frame(width: 32, height: 32)
+                                        .background(FinTrackStyle.soft, in: Circle())
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(insight.title).font(.subheadline.weight(.semibold))
+                                        Text(insight.message)
+                                            .font(.caption)
+                                            .foregroundStyle(FinTrackStyle.muted)
+                                    }
                                 }
                             }
-                            .padding(.top, 8)
                         }
                     }
                 }
-
-                Text("Recent transactions")
-                    .font(.headline)
-                    .foregroundStyle(FinTrackStyle.ink)
-                let recent = Array(store.transactions.prefix(4))
-                if recent.isEmpty {
-                    FinanceCard {
-                        Text("Your transactions will appear here.")
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    FinanceCard {
-                        VStack(spacing: 0) {
-                            ForEach(Array(recent.enumerated()), id: \.element.id) { index, transaction in
-                                TransactionRow(
-                                    transaction: transaction,
-                                    categoryName: store.categories.first(where: { $0.id == transaction.categoryID })?.name ?? transaction.kind.title
-                                )
-                                .padding(.vertical, 8)
-                                if index < recent.count - 1 { Divider() }
-                            }
-                        }
-                    }
-                }
+                .padding(FinTrackStyle.pageInset)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.white, in: UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30))
+                .padding(.top, -29)
             }
-            .padding(16)
         }
-        .background(FinTrackStyle.background)
-        .navigationTitle("FinTrack")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { showingEditor = true } label: { Image(systemName: "plus") } } }
-        .sheet(isPresented: $showingEditor) { TransactionEditorView() }
+        .scrollIndicators(.hidden)
+        .background(FinTrackStyle.soft)
+        .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showingEditor) { TransactionEditorView(initialKind: entryKind) }
+        .sheet(item: $selectedTransaction) { transaction in
+            TransactionDetailView(
+                transaction: transaction,
+                categoryName: store.categories.first(where: { $0.id == transaction.categoryID })?.name ?? transaction.kind.title
+            )
+        }
     }
 
     private func summaryItem(_ title: String, amount: Int64, color: Color) -> some View {
@@ -155,7 +206,7 @@ struct OverviewView: View {
         switch level {
         case .positive: FinTrackStyle.green
         case .warning: .orange
-        case .information: FinTrackStyle.purple
+        case .information: FinTrackStyle.black
         }
     }
 }
