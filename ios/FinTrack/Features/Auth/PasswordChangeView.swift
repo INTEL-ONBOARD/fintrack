@@ -13,7 +13,7 @@ struct PasswordChangeView: View {
         Form {
                 Section {
                     BrandPageIntro(title: "Password", subtitle: "Keep your account secure.", icon: "lock")
-                        .listRowInsets(EdgeInsets())
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
             SecureField("Current password", text: $oldPassword)
@@ -26,8 +26,9 @@ struct PasswordChangeView: View {
             if let message { Text(message).foregroundStyle(FinTrackStyle.green) }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Change Password")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
         .alert("Unable to change password", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK", role: .cancel) {}

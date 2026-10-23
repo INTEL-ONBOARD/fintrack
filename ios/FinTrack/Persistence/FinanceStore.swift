@@ -40,6 +40,8 @@ final class FinanceStore: ObservableObject {
     @Published private(set) var isSyncingAll = false
     @Published private(set) var lastSyncAt: Date?
     @Published var errorMessage: String?
+    private var isSyncingCategoryBudgets = false
+    private var repeatCategoryBudgetSync = false
 
     var pendingTransactionCount: Int {
         transactions.filter { apiID(from: $0.externalReference) == nil }.count
@@ -210,6 +212,11 @@ final class FinanceStore: ObservableObject {
                 try save(localTransaction)
                 if remoteTransaction.hasReceipt == true {
                     try await downloadReceiptIfNeeded(for: localTransaction, remoteID: remoteTransaction.id, accessToken: accessToken)
+                } else if remoteTransaction.hasReceipt == false,
+                          let receipt = try find(ReceiptEntity.self, named: "Receipt", id: localTransaction.id),
+                          receipt.syncedToServerID == remoteTransaction.id {
+                    context.delete(receipt)
+                    try context.save()
                 }
             }
             await uploadPendingTransactions(accessToken: accessToken)
@@ -234,9 +241,27 @@ final class FinanceStore: ObservableObject {
     }
 
     func syncCategoriesBudgets(accessToken: String) async {
+        guard !isSyncingCategoryBudgets else {
+            repeatCategoryBudgetSync = true
+            return
+        }
+        isSyncingCategoryBudgets = true
+        defer {
+            isSyncingCategoryBudgets = false
+            if repeatCategoryBudgetSync {
+                repeatCategoryBudgetSync = false
+                Task { await syncCategoriesBudgets(accessToken: accessToken) }
+            }
+        }
         do {
             try await flushPendingDeletions(accessToken: accessToken)
-            let remoteCategories = try await api.listCategories(accessToken: accessToken)
+            var remoteCategories: [RemoteCategory] = []
+            repeat {
+                let page = try await api.listCategories(accessToken: accessToken, skip: remoteCategories.count)
+                remoteCategories += page
+                if page.count < 500 { break }
+            } while true
+            var remoteCategoryIDs = Set(remoteCategories.map(\.id))
             for remote in remoteCategories {
                 guard let kind = TransactionKind(rawValue: remote.kind) else { continue }
                 let matched = categories.first {
@@ -255,18 +280,32 @@ final class FinanceStore: ObservableObject {
             }
             for category in categories where category.serverID == nil || category.needsSync {
                 if category.serverID != nil {
-                    try await api.updateCategory(category, accessToken: accessToken)
+                    if remoteCategoryIDs.contains(category.serverID!) {
+                        try await api.updateCategory(category, accessToken: accessToken)
+                    } else {
+                        let remote = try await api.createCategory(category, accessToken: accessToken)
+                        try markCategoryServerID(remote.id, localID: category.id)
+                        remoteCategoryIDs.insert(remote.id)
+                    }
                     for transaction in transactions where transaction.categoryID == category.id && apiID(from: transaction.externalReference) != nil {
                         try await pushRemoteTransaction(transaction, accessToken: accessToken)
                     }
-                    try markCategoryServerID(category.serverID!, localID: category.id, synced: true)
+                    let currentID = categories.first(where: { $0.id == category.id })?.serverID ?? category.serverID!
+                    try markCategoryServerID(currentID, localID: category.id, synced: true)
                 } else {
                     let remote = try await api.createCategory(category, accessToken: accessToken)
                     try markCategoryServerID(remote.id, localID: category.id, synced: true)
+                    remoteCategoryIDs.insert(remote.id)
                 }
             }
 
-            let remoteBudgets = try await api.listBudgets(accessToken: accessToken)
+            var remoteBudgets: [RemoteBudget] = []
+            repeat {
+                let page = try await api.listBudgets(accessToken: accessToken, skip: remoteBudgets.count)
+                remoteBudgets += page
+                if page.count < 500 { break }
+            } while true
+            let remoteBudgetIDs = Set(remoteBudgets.map(\.id))
             for remote in remoteBudgets {
                 let localCategoryID = remote.categoryId.flatMap { serverID in
                     categories.first(where: { $0.serverID == serverID })?.id
@@ -287,17 +326,31 @@ final class FinanceStore: ObservableObject {
                     ), fromServer: true)
                 }
             }
+            for budget in budgets where budget.serverID != nil && !budget.needsSync && !remoteBudgetIDs.contains(budget.serverID!) {
+                try delete(budget, fromServer: true)
+            }
             for budget in budgets where budget.serverID == nil || budget.needsSync {
                 let categoryServerID = budget.categoryID.flatMap { localID in
                     categories.first(where: { $0.id == localID })?.serverID
                 }
                 if budget.categoryID != nil && categoryServerID == nil { continue }
                 if let serverID = budget.serverID {
-                    try await api.updateBudget(budget, categoryServerID: categoryServerID, accessToken: accessToken)
-                    try markBudgetServerID(serverID, localID: budget.id, synced: true)
+                    if remoteBudgetIDs.contains(serverID) {
+                        try await api.updateBudget(budget, categoryServerID: categoryServerID, accessToken: accessToken)
+                        try markBudgetServerID(serverID, localID: budget.id, synced: true)
+                    } else {
+                        let remote = try await api.createBudget(budget, categoryServerID: categoryServerID, accessToken: accessToken)
+                        try markBudgetServerID(remote.id, localID: budget.id, synced: true)
+                    }
                 } else {
                     let remote = try await api.createBudget(budget, categoryServerID: categoryServerID, accessToken: accessToken)
                     try markBudgetServerID(remote.id, localID: budget.id, synced: true)
+                }
+            }
+            for category in categories where category.serverID != nil && !category.needsSync && !remoteCategoryIDs.contains(category.serverID!) {
+                if !transactions.contains(where: { $0.categoryID == category.id }) &&
+                   !budgets.contains(where: { $0.categoryID == category.id }) {
+                    try delete(category, fromServer: true)
                 }
             }
         } catch {

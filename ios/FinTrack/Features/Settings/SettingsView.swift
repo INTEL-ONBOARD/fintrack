@@ -17,7 +17,7 @@ struct SettingsView: View {
         List {
             Section {
                 BrandPageIntro(title: "Settings", subtitle: "Shape FinTrack around your life.", icon: "gearshape")
-                    .listRowInsets(EdgeInsets())
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
             }
 
@@ -132,7 +132,8 @@ struct SettingsView: View {
             }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Settings")
+        .navigationTitle("")
+        .toolbar(.hidden, for: .navigationBar)
         .onChange(of: localSummaryNotificationsEnabled) { _, enabled in
             Task { await updateLocalSummary(enabled: enabled) }
         }

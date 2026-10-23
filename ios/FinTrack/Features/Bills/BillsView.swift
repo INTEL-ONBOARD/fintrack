@@ -9,7 +9,9 @@ struct BillsView: View {
 
     var body: some View {
         ScrollView {
-                BrandPageIntro(title: "Bills", subtitle: "Stay ahead of upcoming payments.", icon: "calendar")
+            BrandPageIntro(title: "Bills", subtitle: "Stay ahead of upcoming payments.", icon: "calendar")
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 14) {
                 if store.bills.isEmpty { ContentUnavailableView("No bills", systemImage: "calendar.badge.clock", description: Text("Add bills and mark them paid each month.")) }
@@ -33,7 +35,9 @@ struct BillsView: View {
         }
         .background(FinTrackStyle.background)
         .finTrackGroupedScreen()
-        .navigationTitle("Bills")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showingEditor) { BillEditorView() }
         .sheet(item: $editing) { BillEditorView(bill: $0) }
         .confirmationDialog("Delete this bill?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
@@ -67,8 +71,8 @@ private struct BillEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    BrandPageIntro(title: "Bill details", subtitle: "Keep the next payment in sight.", icon: "calendar")
-                        .listRowInsets(EdgeInsets())
+                    BrandPageIntro(title: "Bill details", subtitle: "Keep the next payment in sight.", icon: "calendar", showsTitle: false)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 TextField("Bill name", text: $name)

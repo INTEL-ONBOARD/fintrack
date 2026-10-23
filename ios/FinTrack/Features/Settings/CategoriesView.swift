@@ -11,7 +11,7 @@ struct CategoriesView: View {
         List {
             Section {
                 BrandPageIntro(title: "Categories", subtitle: "Organize where your money goes.", icon: "square.grid.2x2")
-                    .listRowInsets(EdgeInsets())
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
             }
 
@@ -38,7 +38,9 @@ struct CategoriesView: View {
             }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Categories")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { adding = true } label: { Image(systemName: "plus") } } }
         .sheet(isPresented: $adding) { CategoryEditorView() }
         .sheet(item: $editing) { CategoryEditorView(category: $0) }
@@ -67,8 +69,8 @@ private struct CategoryEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    BrandPageIntro(title: "Category details", subtitle: "Keep your transactions organized.", icon: "square.grid.2x2")
-                        .listRowInsets(EdgeInsets())
+                    BrandPageIntro(title: "Category details", subtitle: "Keep your transactions organized.", icon: "square.grid.2x2", showsTitle: false)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 TextField("Name", text: $name)

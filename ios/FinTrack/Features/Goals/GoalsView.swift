@@ -9,7 +9,9 @@ struct GoalsView: View {
 
     var body: some View {
         ScrollView {
-                BrandPageIntro(title: "Goals", subtitle: "Make progress on what matters.", icon: "target")
+            BrandPageIntro(title: "Goals", subtitle: "Make progress on what matters.", icon: "target")
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 14) {
                 if store.goals.isEmpty { ContentUnavailableView("No goals", systemImage: "target", description: Text("Create a savings goal to track progress.")) }
@@ -32,7 +34,9 @@ struct GoalsView: View {
         }
         .background(FinTrackStyle.background)
         .finTrackGroupedScreen()
-        .navigationTitle("Goals")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showingEditor) { GoalEditorView() }
         .sheet(item: $editing) { GoalEditorView(goal: $0) }
         .confirmationDialog("Delete this goal?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
@@ -66,8 +70,8 @@ private struct GoalEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    BrandPageIntro(title: "Goal details", subtitle: "Plan your next milestone.", icon: "target")
-                        .listRowInsets(EdgeInsets())
+                    BrandPageIntro(title: "Goal details", subtitle: "Plan your next milestone.", icon: "target", showsTitle: false)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 TextField("Goal name", text: $name)

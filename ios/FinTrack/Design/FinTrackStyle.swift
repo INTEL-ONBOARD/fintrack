@@ -62,6 +62,7 @@ struct BrandPageIntro: View {
     let title: String
     let subtitle: String
     let icon: String
+    var showsTitle = true
     @ScaledMetric(relativeTo: .largeTitle) private var titleSize: CGFloat = 30
 
     var body: some View {
@@ -71,9 +72,12 @@ struct BrandPageIntro: View {
                     .font(.caption2.weight(.bold))
                     .tracking(1.3)
                     .foregroundStyle(.white.opacity(0.55))
-                Text(title)
-                    .font(.system(size: titleSize, design: .serif))
-                    .foregroundStyle(.white)
+                if showsTitle {
+                    Text(title)
+                        .font(.system(size: titleSize, design: .serif))
+                        .foregroundStyle(.white)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.65))

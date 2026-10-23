@@ -9,7 +9,9 @@ struct AccountsView: View {
 
     var body: some View {
         ScrollView {
-                BrandPageIntro(title: "Accounts", subtitle: "Keep track of cash and bank balances.", icon: "building.columns")
+            BrandPageIntro(title: "Accounts", subtitle: "Keep track of cash and bank balances.", icon: "building.columns")
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 14) {
                 if store.accounts.isEmpty {
@@ -39,7 +41,9 @@ struct AccountsView: View {
         }
         .background(FinTrackStyle.background)
         .finTrackGroupedScreen()
-        .navigationTitle("Accounts")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showingEditor) { AccountEditorView() }
         .sheet(item: $editing) { AccountEditorView(account: $0) }
         .confirmationDialog("Delete this account?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
@@ -75,8 +79,8 @@ private struct AccountEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    BrandPageIntro(title: "Account details", subtitle: "Name your account and set its balance.", icon: "building.columns")
-                        .listRowInsets(EdgeInsets())
+                    BrandPageIntro(title: "Account details", subtitle: "Name your account and set its balance.", icon: "building.columns", showsTitle: false)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 TextField("Account name", text: $name)

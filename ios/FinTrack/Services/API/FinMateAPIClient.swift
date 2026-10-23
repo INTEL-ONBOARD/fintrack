@@ -193,8 +193,10 @@ struct FinMateAPIClient {
         )
     }
 
-    func listCategories(accessToken: String) async throws -> [RemoteCategory] {
-        try await send(path: "/api/categories", method: "GET", accessToken: accessToken)
+    func listCategories(accessToken: String, limit: Int = 500, skip: Int = 0) async throws -> [RemoteCategory] {
+        try await send(path: "/api/categories", method: "GET", queryItems: [
+            URLQueryItem(name: "limit", value: String(limit)), URLQueryItem(name: "skip", value: String(skip))
+        ], accessToken: accessToken)
     }
 
     func createCategory(_ category: FinanceCategory, accessToken: String) async throws -> RemoteCategory {
@@ -212,8 +214,10 @@ struct FinMateAPIClient {
         let _: APIStatusResponse = try await send(path: "/api/categories/\(id)", method: "DELETE", accessToken: accessToken)
     }
 
-    func listBudgets(accessToken: String) async throws -> [RemoteBudget] {
-        try await send(path: "/api/budgets", method: "GET", accessToken: accessToken)
+    func listBudgets(accessToken: String, limit: Int = 500, skip: Int = 0) async throws -> [RemoteBudget] {
+        try await send(path: "/api/budgets", method: "GET", queryItems: [
+            URLQueryItem(name: "limit", value: String(limit)), URLQueryItem(name: "skip", value: String(skip))
+        ], accessToken: accessToken)
     }
 
     func createBudget(_ budget: FinanceBudget, categoryServerID: String?, accessToken: String) async throws -> RemoteBudget {

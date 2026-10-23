@@ -70,7 +70,8 @@ struct TransactionsView: View {
             .padding(16)
         }
         .background(FinTrackStyle.background)
-        .navigationTitle("Transactions")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { showingEditor = true } label: { Image(systemName: "plus") } } }
         .searchable(text: $searchText, prompt: "Search merchant, note or category")

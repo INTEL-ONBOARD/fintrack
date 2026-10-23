@@ -17,11 +17,30 @@ struct BudgetsView: View {
 
     var body: some View {
         ScrollView {
-                BrandPageIntro(title: "Budgets", subtitle: "Know your limits before you spend.", icon: "chart.pie")
+            BrandPageIntro(title: "Budgets", subtitle: "Know your limits before you spend.", icon: "chart.pie")
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 16) {
-                DatePicker("Budget month", selection: $selectedMonth, displayedComponents: .date)
-                    .datePickerStyle(.compact)
+                HStack(spacing: 8) {
+                    Text("Budget month")
+                    Spacer()
+                    Button { moveMonth(by: -1) } label: {
+                        Image(systemName: "chevron.left")
+                            .frame(width: 32, height: 44)
+                    }
+                    .accessibilityLabel("Previous month")
+                    Text(selectedMonth.formatted(.dateTime.month(.wide).year()))
+                        .font(.subheadline.weight(.medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Button { moveMonth(by: 1) } label: {
+                        Image(systemName: "chevron.right")
+                            .frame(width: 32, height: 44)
+                    }
+                    .accessibilityLabel("Next month")
+                }
+                .buttonStyle(.plain)
                 if current.isEmpty {
                     ContentUnavailableView(
                         "No budgets for this month", systemImage: "chart.pie",
@@ -70,7 +89,8 @@ struct BudgetsView: View {
         }
         .background(FinTrackStyle.background)
         .finTrackGroupedScreen()
-        .navigationTitle("Budgets")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showingEditor) { BudgetEditorView(month: selectedMonth) }
         .sheet(item: $editing) { BudgetEditorView(month: selectedMonth, budget: $0) }
@@ -85,6 +105,12 @@ struct BudgetsView: View {
                 } catch { store.errorMessage = error.localizedDescription }
                 self.deleting = nil
             }
+        }
+    }
+
+    private func moveMonth(by offset: Int) {
+        if let month = Calendar.current.date(byAdding: .month, value: offset, to: selectedMonth) {
+            selectedMonth = month
         }
     }
 }
@@ -111,8 +137,8 @@ private struct BudgetEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    BrandPageIntro(title: "Budget details", subtitle: "Choose a limit for the month.", icon: "chart.pie")
-                        .listRowInsets(EdgeInsets())
+                    BrandPageIntro(title: "Budget details", subtitle: "Choose a limit for the month.", icon: "chart.pie", showsTitle: false)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 Picker("Category", selection: $categoryID) {

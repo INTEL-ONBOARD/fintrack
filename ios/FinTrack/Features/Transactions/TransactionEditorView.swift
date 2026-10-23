@@ -60,8 +60,8 @@ struct TransactionEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    BrandPageIntro(title: "Transaction", subtitle: "Record the details that matter.", icon: "arrow.left.arrow.right")
-                        .listRowInsets(EdgeInsets())
+                    BrandPageIntro(title: "Transaction", subtitle: "Record the details that matter.", icon: "arrow.left.arrow.right", showsTitle: false)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 if let warning = reviewWarning ?? voiceWarning {

@@ -12,7 +12,7 @@ struct ChatView: View {
         List {
             Section {
                 BrandPageIntro(title: "Chat", subtitle: "Your conversations in one place.", icon: "message")
-                    .listRowInsets(EdgeInsets())
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
             }
 
@@ -49,7 +49,9 @@ struct ChatView: View {
             }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Chat")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .task { await load() }
         .refreshable { await load() }
         .overlay { if isLoading { ProgressView() } }
