@@ -2,13 +2,15 @@ import AppIntents
 import UIKit
 
 private enum ShortcutInputError: LocalizedError {
-    case invalidMessage
+    case missingMessage
+    case messageTooLong
     case invalidAmount
     case cannotOpenApp
 
     var errorDescription: String? {
         switch self {
-        case .invalidMessage: "Enter a financial message of at most 2,048 characters."
+        case .missingMessage: "Shortcuts did not pass the message text. Check the automation's Message Text input."
+        case .messageTooLong: "The message is over 2,048 characters."
         case .invalidAmount: "Enter a positive LKR amount with no more than two decimal places."
         case .cannotOpenApp: "FinTrack could not open the review screen."
         }
@@ -35,28 +37,63 @@ private enum ShortcutNavigation {
 
 struct ImportFinancialMessageIntent: AppIntent {
     static let title: LocalizedStringResource = "Import Financial Message"
-    static let description = IntentDescription("Review a bank message as a FinTrack transaction.")
-    static let openAppWhenRun = true
+    static let description = IntentDescription("Save a clear financial message or queue it for review in FinTrack.")
+    static let openAppWhenRun = false
 
     @Parameter(title: "Message Text") var message: String
     @Parameter(title: "Sender") var sender: String?
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        let store = FinanceStore()
+        switch try FinancialMessageImportHandler.process(
+            message: message, sender: sender, store: store,
+            reviewInbox: .shared
+        ) {
+        case .ignored:
+            return .result(dialog: "This message does not describe a completed transaction.")
+        case .duplicate:
+            return .result(dialog: "This message was already imported.")
+        case .queued:
+            return .result(dialog: "This message needs review. Open FinTrack Import to check it.")
+        case .saved(let transaction):
+            WidgetSnapshotWriter.update(
+                transactions: store.transactions, budgets: store.budgets,
+                settings: store.settings
+            )
+            return .result(dialog: "Saved \(transaction.kind.title.lowercased()) in FinTrack.")
+        }
+    }
+}
+
+enum FinancialMessageImportOutcome {
+    case ignored
+    case duplicate
+    case queued
+    case saved(FinanceTransaction)
+}
+
+@MainActor
+enum FinancialMessageImportHandler {
+    static func process(
+        message: String, sender: String?, store: FinanceStore,
+        reviewInbox: PendingMessageReviewInbox
+    ) throws -> FinancialMessageImportOutcome {
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, text.count <= 2_048 else { throw ShortcutInputError.invalidMessage }
+        guard !text.isEmpty else { throw ShortcutInputError.missingMessage }
+        guard text.count <= 2_048 else { throw ShortcutInputError.messageTooLong }
 
         let parsed = FinancialMessageParser.parse(text, sender: sender)
-        let bankDraft: FinancialMessageDraft
+        let draft: FinancialMessageDraft
         let warning: String?
         switch parsed {
         case .ignored:
-            return .result(dialog: "This message does not describe a completed transaction.")
-        case .ready(let draft):
-            bankDraft = draft
-            warning = nil
-        case .reviewRequired(let draft, let reason):
-            bankDraft = draft
+            return .ignored
+        case .ready(let value):
+            draft = value
+            warning = isClearAccountAlert(text) ? nil : "Confirm this message is your transaction."
+        case .reviewRequired(let value, let reason):
+            draft = value
             warning = switch reason {
             case .conflictingDirection: "Check whether this is money in or out."
             case .transferDirection: "Check the transfer direction before saving."
@@ -66,7 +103,12 @@ struct ImportFinancialMessageIntent: AppIntent {
             }
         }
 
-        let kind: TransactionKind = switch bankDraft.kind {
+        let reference = "sms:" + draft.fingerprint
+        if store.transactions.contains(where: {
+            $0.source == .sms && ($0.externalReference == reference || $0.externalReference?.hasSuffix("|\(reference)") == true)
+        }) { return .duplicate }
+
+        let kind: TransactionKind = switch draft.kind {
         case .expense: .expense
         case .income: .income
         case .transfer: .transfer
@@ -75,18 +117,33 @@ struct ImportFinancialMessageIntent: AppIntent {
         case .bankFee: .bankFee
         case .interest: .interest
         }
-        let transaction = FinanceTransaction(
+        var transaction = FinanceTransaction(
             kind: kind,
-            amountMinor: bankDraft.amountMinorUnits,
-            merchant: bankDraft.counterparty ?? "",
+            amountMinor: draft.amountMinorUnits,
+            merchant: draft.counterparty ?? "",
             source: .sms,
-            externalReference: "sms:" + bankDraft.fingerprint
+            externalReference: reference
         )
-        try await ShortcutNavigation.open(
-            PendingShortcutDraft(transaction: transaction, reviewWarning: warning),
-            route: .messageImport
-        )
-        return .result(dialog: "Review the transaction in FinTrack before saving.")
+        transaction.categoryID = OnDeviceTransactionClassifier()
+            .suggest(text: text, kind: kind, categories: store.categories)?.categoryID
+
+        if let warning {
+            try reviewInbox.add(PendingShortcutDraft(transaction: transaction, reviewWarning: warning))
+            return .queued
+        }
+        do {
+            try store.save(transaction)
+            return .saved(transaction)
+        } catch FinanceStoreError.duplicateImport {
+            return .duplicate
+        }
+    }
+
+    private static func isClearAccountAlert(_ text: String) -> Bool {
+        text.range(
+            of: #"\b(?:debited|credited|charged|deposited|withdrawn|refunded|reversed|interest credited)\b"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
     }
 }
 

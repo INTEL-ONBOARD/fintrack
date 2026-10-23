@@ -1,8 +1,52 @@
 import Foundation
 
-struct PendingShortcutDraft {
+struct PendingShortcutDraft: Codable {
     let transaction: FinanceTransaction
     let reviewWarning: String?
+}
+
+@MainActor
+final class PendingMessageReviewInbox {
+    static let shared = PendingMessageReviewInbox()
+
+    private let fileURL: URL
+
+    init(fileURL: URL? = nil) {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        self.fileURL = fileURL ?? appSupport.appendingPathComponent("FinTrack/message-reviews.json")
+    }
+
+    func all() -> [PendingShortcutDraft] {
+        (try? read()) ?? []
+    }
+
+    func add(_ draft: PendingShortcutDraft) throws {
+        var items = try read()
+        if let reference = draft.transaction.externalReference,
+           items.contains(where: { $0.transaction.externalReference == reference }) { return }
+        items.append(draft)
+        try write(items)
+    }
+
+    func remove(id: UUID) throws {
+        try write(read().filter { $0.transaction.id != id })
+    }
+
+    private func read() throws -> [PendingShortcutDraft] {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
+        return try JSONDecoder().decode([PendingShortcutDraft].self, from: Data(contentsOf: fileURL))
+    }
+
+    private func write(_ items: [PendingShortcutDraft]) throws {
+        try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(items)
+        #if os(iOS)
+        try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        #else
+        try data.write(to: fileURL, options: .atomic)
+        #endif
+    }
 }
 
 enum ShortcutDraftRoute: String {

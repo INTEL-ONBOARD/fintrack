@@ -89,9 +89,14 @@ private struct FinTrackRootView: View {
             }
             if phase == .active && isLocked && !showingLaunchIntro { Task { await unlock() } }
             if phase == .active {
+                try? store.reload()
+                refreshWidget()
                 Task {
                     await scheduleLocalSummaryNotification()
                     await scheduleSmartAlerts()
+                    if auth.isAuthenticated, let token = auth.token() {
+                        await store.syncTransactions(accessToken: token)
+                    }
                 }
             }
         }
