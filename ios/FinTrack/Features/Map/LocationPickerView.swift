@@ -26,10 +26,10 @@ struct LocationPickerView: View {
                 Map(position: $position) {
                     if let coordinate {
                         Marker("Transaction location", coordinate: coordinate)
-                            .tint(FinTrackStyle.purple)
+                            .tint(FinTrackStyle.black)
                     }
                 }
-                .mapStyle(.standard)
+                .mapStyle(.standard(elevation: .flat, emphasis: .muted))
                 .onTapGesture { point in
                     guard let newCoordinate = proxy.convert(point, from: .local) else { return }
                     setLocation(newCoordinate)
@@ -63,8 +63,8 @@ struct LocationPickerView: View {
                         }
                     }
                 }
-                .padding(16)
-                .background(.ultraThinMaterial)
+                .padding(20)
+                .background(.white, in: UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
             }
             .navigationTitle("Transaction Location")
             .navigationBarTitleDisplayMode(.inline)

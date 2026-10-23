@@ -88,18 +88,27 @@ struct ReportsView: View {
                     }
                 }
 
-                FinanceCard {
+                VStack(alignment: .leading, spacing: 20) {
                     Text("\(interval.start.formatted(date: .abbreviated, time: .omitted)) – \(displayEnd.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text("Net cash flow")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text(Money.formatted(totals.netMinor))
+                        .font(.system(size: 36, weight: .medium, design: .rounded))
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                        .foregroundStyle(.white)
                     HStack {
                         metric("Income", amount: totals.incomeMinor, color: FinTrackStyle.green)
                         Spacer()
-                        metric("Expenses", amount: totals.expenseMinor, color: FinTrackStyle.ink)
+                        metric("Expenses", amount: totals.expenseMinor, color: .white)
                     }
-                    Divider()
-                    metric("Net cash flow", amount: totals.netMinor, color: FinTrackStyle.purple)
                 }
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(FinTrackStyle.black, in: RoundedRectangle(cornerRadius: 28))
 
                 FinanceCard {
                     Text("Spending trend").font(.headline)
@@ -111,7 +120,7 @@ struct ReportsView: View {
                                 x: .value("Date", point.date),
                                 y: .value("Spending", Double(point.amountMinor) / 100)
                             )
-                            .foregroundStyle(FinTrackStyle.purple)
+                            .foregroundStyle(FinTrackStyle.black)
                         }
                         .frame(height: 170)
                         .accessibilityLabel("Spending trend. Total expenses \(Money.formatted(totals.expenseMinor)).")
@@ -136,7 +145,7 @@ struct ReportsView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(FinTrackStyle.pageInset)
         }
         .background(FinTrackStyle.background)
         .navigationTitle("Reports")
@@ -144,7 +153,7 @@ struct ReportsView: View {
 
     private func metric(_ title: String, amount: Int64, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.caption).foregroundStyle(.white.opacity(0.6))
             Text(Money.formatted(amount))
                 .font(.headline)
                 .foregroundStyle(color)

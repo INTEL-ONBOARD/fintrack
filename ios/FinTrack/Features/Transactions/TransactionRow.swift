@@ -12,9 +12,9 @@ struct TransactionRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.headline)
-                .foregroundStyle(isPositive ? FinTrackStyle.green : FinTrackStyle.purple)
+                .foregroundStyle(isPositive ? FinTrackStyle.green : FinTrackStyle.black)
                 .frame(width: 38, height: 38)
-                .background((isPositive ? FinTrackStyle.green : FinTrackStyle.purple).opacity(0.10), in: Circle())
+                .background((isPositive ? FinTrackStyle.green : FinTrackStyle.black).opacity(0.10), in: Circle())
             VStack(alignment: .leading, spacing: 3) {
                 Text(transaction.merchant.isEmpty ? transaction.kind.title : transaction.merchant)
                     .font(.subheadline.weight(.semibold))

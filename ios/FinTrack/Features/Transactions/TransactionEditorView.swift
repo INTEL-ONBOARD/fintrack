@@ -26,11 +26,11 @@ struct TransactionEditorView: View {
     @StateObject private var voice = VoiceTransactionService()
     @State private var voiceWarning: String?
 
-    init(transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false, reviewWarning: String? = nil) {
+    init(transaction: FinanceTransaction? = nil, isReviewDraft: Bool = false, reviewWarning: String? = nil, initialKind: TransactionKind = .expense) {
         original = transaction
         self.isReviewDraft = isReviewDraft
         self.reviewWarning = reviewWarning
-        _kind = State(initialValue: transaction?.kind ?? .expense)
+        _kind = State(initialValue: transaction?.kind ?? initialKind)
         let amount = transaction.map {
             NSDecimalNumber(value: $0.amountMinor).dividing(by: NSDecimalNumber(value: 100)).stringValue
         } ?? ""
@@ -52,6 +52,11 @@ struct TransactionEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Transaction", subtitle: "Record the details that matter.", icon: "arrow.left.arrow.right")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 if let warning = reviewWarning ?? voiceWarning {
                     Section {
                         Text(warning)
@@ -154,6 +159,7 @@ struct TransactionEditorView: View {
                         .listRowBackground(Color.clear)
                 }
             }
+            .finTrackGroupedScreen()
             .navigationTitle(isReviewDraft ? "Review Transaction" : (original == nil ? "Add Transaction" : "Edit Transaction"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }

@@ -11,6 +11,11 @@ struct DataManagementView: View {
 
     var body: some View {
         Form {
+                Section {
+                    BrandPageIntro(title: "Your data", subtitle: "Manage information on this device and in your account.", icon: "externaldrive")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
             Section("Local data") {
                 Text("Remove transactions, categories, budgets, accounts, goals, bills and notifications from this device.")
                     .font(.footnote).foregroundStyle(.secondary)
@@ -26,6 +31,7 @@ struct DataManagementView: View {
             if isWorking { ProgressView("Working…") }
             if let message { Text(message).foregroundStyle(FinTrackStyle.green) }
         }
+        .finTrackGroupedScreen()
         .navigationTitle("Data Management")
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("Delete all cloud data?", isPresented: $showingRemoteConfirmation) {

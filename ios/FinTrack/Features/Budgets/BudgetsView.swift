@@ -16,6 +16,8 @@ struct BudgetsView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Budgets", subtitle: "Know your limits before you spend.", icon: "chart.pie")
+
             VStack(alignment: .leading, spacing: 16) {
                 DatePicker("Budget month", selection: $selectedMonth, displayedComponents: .date)
                     .datePickerStyle(.compact)
@@ -37,11 +39,11 @@ struct BudgetsView: View {
                                     .font(.headline)
                                 Spacer()
                                 Text("\(Int(FinanceMath.budgetProgress(spentMinor: spent, limitMinor: budget.amountMinor) * 100))%")
-                                    .foregroundStyle(FinTrackStyle.purple)
+                                    .foregroundStyle(FinTrackStyle.black)
                                     .font(.subheadline.bold())
                             }
                             ProgressView(value: FinanceMath.budgetProgress(spentMinor: spent, limitMinor: budget.amountMinor))
-                                .tint(spent > budget.amountMinor ? .red : FinTrackStyle.purple)
+                                .tint(spent > budget.amountMinor ? .red : FinTrackStyle.black)
                                 .padding(.vertical, 6)
                             HStack {
                                 Text("\(Money.formatted(spent)) spent")
@@ -66,7 +68,9 @@ struct BudgetsView: View {
             .padding(16)
         }
         .background(FinTrackStyle.background)
+        .finTrackGroupedScreen()
         .navigationTitle("Budgets")
+        .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showingEditor) { BudgetEditorView(month: selectedMonth) }
         .sheet(item: $editing) { BudgetEditorView(month: selectedMonth, budget: $0) }
         .confirmationDialog("Delete this budget?", isPresented: Binding(
@@ -103,6 +107,11 @@ private struct BudgetEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Budget details", subtitle: "Choose a limit for the month.", icon: "chart.pie")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 Picker("Category", selection: $categoryID) {
                     Text("Overall budget").tag(Optional<UUID>.none)
                     ForEach(store.categories.filter { $0.kind == .expense }) { category in
@@ -116,6 +125,7 @@ private struct BudgetEditorView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }
+            .finTrackGroupedScreen()
             .navigationTitle(budget == nil ? "Add Budget" : "Edit Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }

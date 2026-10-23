@@ -16,6 +16,22 @@ struct AuthView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("FINTRACK")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.4)
+                            .foregroundStyle(.white.opacity(0.6))
+                        Text(isRegistering ? "Start with clarity." : "Welcome back.")
+                            .font(.system(size: 34, design: .serif))
+                            .foregroundStyle(.white)
+                        Text("Your finances, all in one place.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .padding(24)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(FinTrackStyle.black, in: RoundedRectangle(cornerRadius: 26))
+
                     Picker("Account action", selection: $isRegistering) {
                         Text("Sign in").tag(false)
                         Text("Create account").tag(true)
@@ -60,7 +76,7 @@ struct AuthView: View {
                             .frame(maxWidth: .infinity)
                     }
                 }
-                .padding(16)
+                .padding(FinTrackStyle.pageInset)
             }
             .background(FinTrackStyle.background)
             .navigationTitle(isRegistering ? "Create account" : "Sign in")

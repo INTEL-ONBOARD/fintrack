@@ -6,8 +6,6 @@ struct ProfileSettingsView: View {
     @EnvironmentObject private var auth: AuthSession
     @EnvironmentObject private var store: FinanceStore
     @AppStorage("monthlyEmailOptIn") private var monthlyEmailOptIn = true
-    @AppStorage(LocalSummaryNotificationScheduler.enabledKey) private var localSummaryNotificationsEnabled = false
-    @AppStorage(LocalSummaryNotificationScheduler.showAmountsKey) private var localSummaryNotificationShowAmounts = true
     @State private var name = ""
     @State private var email = ""
     @State private var currency = "LKR"
@@ -20,6 +18,11 @@ struct ProfileSettingsView: View {
 
     var body: some View {
         Form {
+                Section {
+                    BrandPageIntro(title: "Your profile", subtitle: "Keep your details and alerts up to date.", icon: "person.crop.circle")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
             Section("Profile") {
                 PhotosPicker(selection: $selectedAvatar, matching: .images) {
                     Label(isUploadingAvatar ? "Uploading avatar…" : "Choose profile avatar", systemImage: "person.crop.circle.badge.plus")
@@ -42,13 +45,6 @@ struct ProfileSettingsView: View {
                 Text("You can unsubscribe from a monthly email using the link inside that email.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Section("On-device summary") {
-                Toggle("Monthly local notification", isOn: $localSummaryNotificationsEnabled)
-                Toggle("Show amounts in notification", isOn: $localSummaryNotificationShowAmounts)
-                    .disabled(!localSummaryNotificationsEnabled)
-                Text("FinTrack prepares this summary from data on this device. The notification is scheduled for the next morning when the app is used.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
             NavigationLink { PasswordChangeView() } label: {
                 Label("Change password", systemImage: "key")
             }
@@ -57,6 +53,7 @@ struct ProfileSettingsView: View {
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
         }
+        .finTrackGroupedScreen()
         .navigationTitle("Profile Settings")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
@@ -99,21 +96,6 @@ struct ProfileSettingsView: View {
             do {
                 await store.saveSettings(value, accessToken: auth.token())
                 try await auth.setMonthlyEmailPreference(optIn: monthlyEmailOptIn)
-                if localSummaryNotificationsEnabled {
-                    guard await LocalSummaryNotificationScheduler.requestAuthorization() else {
-                        localSummaryNotificationsEnabled = false
-                        errorMessage = "Allow notifications in Settings to receive local summaries."
-                        return
-                    }
-                    await LocalSummaryNotificationScheduler.scheduleCurrentMonthSummary(
-                        transactions: store.transactions,
-                        categories: store.categories,
-                        budgets: store.budgets,
-                        currency: value.currency
-                    )
-                } else {
-                    LocalSummaryNotificationScheduler.cancel()
-                }
                 dismiss()
             } catch { errorMessage = error.localizedDescription }
         }

@@ -23,6 +23,8 @@ struct ImportView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Import", subtitle: "Bring in messages, statements and receipts.", icon: "square.and.arrow.down")
+
             VStack(alignment: .leading, spacing: 18) {
                 Text("Review imported details before saving them to your ledger.")
                     .foregroundStyle(.secondary)

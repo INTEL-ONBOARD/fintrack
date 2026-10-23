@@ -9,16 +9,18 @@ struct GoalsView: View {
 
     var body: some View {
         ScrollView {
+                BrandPageIntro(title: "Goals", subtitle: "Make progress on what matters.", icon: "target")
+
             VStack(alignment: .leading, spacing: 14) {
                 if store.goals.isEmpty { ContentUnavailableView("No goals", systemImage: "target", description: Text("Create a savings goal to track progress.")) }
                 ForEach(store.goals) { goal in
                     Button { editing = goal } label: {
                         FinanceCard {
                             HStack {
-                                Image(systemName: goal.icon).foregroundStyle(FinTrackStyle.purple)
+                                Image(systemName: goal.icon).foregroundStyle(FinTrackStyle.black)
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text(goal.name).font(.headline)
-                                    ProgressView(value: Double(goal.currentMinor), total: Double(max(goal.targetMinor, 1))).tint(FinTrackStyle.purple)
+                                    ProgressView(value: Double(goal.currentMinor), total: Double(max(goal.targetMinor, 1))).tint(FinTrackStyle.black)
                                     Text("\(Money.formatted(goal.currentMinor)) of \(Money.formatted(goal.targetMinor))").font(.caption).foregroundStyle(.secondary)
                                 }
                             }
@@ -29,6 +31,7 @@ struct GoalsView: View {
             }.padding(16)
         }
         .background(FinTrackStyle.background)
+        .finTrackGroupedScreen()
         .navigationTitle("Goals")
         .sheet(isPresented: $showingEditor) { GoalEditorView() }
         .sheet(item: $editing) { GoalEditorView(goal: $0) }
@@ -62,6 +65,11 @@ private struct GoalEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    BrandPageIntro(title: "Goal details", subtitle: "Plan your next milestone.", icon: "target")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
                 TextField("Goal name", text: $name)
                 TextField("Target in LKR", text: $target).keyboardType(.decimalPad)
                 TextField("Current amount in LKR", text: $current).keyboardType(.decimalPad)
@@ -69,6 +77,7 @@ private struct GoalEditorView: View {
                 TextField("Deadline", text: $deadline)
                 Button("Save Goal") { save() }.buttonStyle(PrimaryButtonStyle()).listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
             }
+            .finTrackGroupedScreen()
             .navigationTitle(goal == nil ? "Add Goal" : "Edit Goal").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
             .alert("Unable to save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "") }

@@ -12,6 +12,10 @@ struct SpendingMapView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            BrandPageIntro(title: "Spending map", subtitle: "See the places behind your transactions.", icon: "map")
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+
             Picker("Map filter", selection: $selectedFilter) {
                 ForEach(filters, id: \.self) { Text($0).tag($0) }
             }
@@ -35,20 +39,20 @@ struct SpendingMapView: View {
                                     .font(.headline)
                                     .foregroundStyle(.white)
                                     .padding(9)
-                                    .background(transaction.kind.isInflow ? FinTrackStyle.green : FinTrackStyle.purple, in: Circle())
+                                    .background(transaction.kind.isInflow ? FinTrackStyle.green : FinTrackStyle.black, in: Circle())
                                     .overlay(Circle().stroke(.white, lineWidth: 2))
                             }
                             .accessibilityLabel(annotationTitle(for: transaction))
                         }
                     }
                 }
-                .mapStyle(.standard)
+                .mapStyle(.standard(elevation: .flat, emphasis: .muted))
             }
         }
         .background(FinTrackStyle.background)
         .navigationTitle("Spending Map")
         .sheet(item: $selectedTransaction) {
-            MapTransactionDetail(transaction: $0, categoryName: categoryName(for: $0))
+            TransactionDetailView(transaction: $0, categoryName: categoryName(for: $0))
         }
     }
 
@@ -73,38 +77,5 @@ struct SpendingMapView: View {
 
     private func annotationTitle(for transaction: FinanceTransaction) -> String {
         "\(transaction.merchant.isEmpty ? transaction.kind.title : transaction.merchant), \(Money.formatted(transaction.amountMinor))"
-    }
-}
-
-private struct MapTransactionDetail: View {
-    @Environment(\.dismiss) private var dismiss
-    let transaction: FinanceTransaction
-    let categoryName: String
-
-    var body: some View {
-        NavigationStack {
-            FinanceCard {
-                Text(transaction.merchant.isEmpty ? transaction.kind.title : transaction.merchant)
-                    .font(.title3.bold())
-                Text(categoryName).foregroundStyle(.secondary)
-                Text(Money.formatted(transaction.amountMinor))
-                    .font(.title2.bold())
-                    .foregroundStyle(transaction.kind.isInflow ? FinTrackStyle.green : FinTrackStyle.purple)
-                Text(transaction.occurredAt.formatted(date: .long, time: .shortened))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                if let locationName = transaction.locationName {
-                    Label(locationName, systemImage: "mappin.and.ellipse")
-                }
-            }
-            .padding(16)
-            .navigationTitle("Transaction")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
     }
 }

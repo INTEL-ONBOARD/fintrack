@@ -11,6 +11,11 @@ struct PasswordChangeView: View {
 
     var body: some View {
         Form {
+                Section {
+                    BrandPageIntro(title: "Password", subtitle: "Keep your account secure.", icon: "lock")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
             SecureField("Current password", text: $oldPassword)
             SecureField("New password", text: $newPassword)
             SecureField("Confirm new password", text: $confirmPassword)
@@ -20,6 +25,7 @@ struct PasswordChangeView: View {
                 .listRowBackground(Color.clear)
             if let message { Text(message).foregroundStyle(FinTrackStyle.green) }
         }
+        .finTrackGroupedScreen()
         .navigationTitle("Change Password")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }

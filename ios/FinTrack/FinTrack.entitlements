@@ -8,5 +8,10 @@
     <array>
         <string>group.app.fintrack.ios</string>
     </array>
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)app.fintrack.ios</string>
+        <string>$(AppIdentifierPrefix)app.fintrack.widgetdata</string>
+    </array>
 </dict>
 </plist>

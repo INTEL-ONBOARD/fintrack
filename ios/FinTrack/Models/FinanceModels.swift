@@ -81,7 +81,7 @@ struct FinanceCategory: Identifiable, Equatable {
     var name: String
     var kind: TransactionKind
     var color: String
-    init(id: UUID = UUID(), name: String, kind: TransactionKind, color: String = "#7044D4") {
+    init(id: UUID = UUID(), name: String, kind: TransactionKind, color: String = "#151718") {
         self.id = id
         self.name = name
         self.kind = kind

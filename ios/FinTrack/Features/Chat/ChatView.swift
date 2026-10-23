@@ -10,6 +10,12 @@ struct ChatView: View {
 
     var body: some View {
         List {
+            Section {
+                BrandPageIntro(title: "Chat", subtitle: "Your conversations in one place.", icon: "message")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+
             Section("Conversations") {
                 NavigationLink { ChatConversationView(conversationID: "group", title: "FinMate group") } label: {
                     Label("FinMate group", systemImage: "person.3")
@@ -42,6 +48,7 @@ struct ChatView: View {
                 }
             }
         }
+        .finTrackGroupedScreen()
         .navigationTitle("Chat")
         .task { await load() }
         .refreshable { await load() }
@@ -82,7 +89,7 @@ struct ChatConversationView: View {
         VStack(spacing: 0) {
             List(messages) { message in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(message.senderName).font(.caption.bold()).foregroundStyle(FinTrackStyle.purple)
+                    Text(message.senderName).font(.caption.bold()).foregroundStyle(FinTrackStyle.black)
                     Text(message.body)
                     Text(message.sentAt).font(.caption2).foregroundStyle(.secondary)
                 }
@@ -98,8 +105,9 @@ struct ChatConversationView: View {
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
             }
             .padding(12)
-            .background(.bar)
+            .background(.white)
         }
+        .finTrackGroupedScreen()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }

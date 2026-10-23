@@ -15,8 +15,8 @@ struct FinTrackApp: App {
                 .environmentObject(store)
                 .environmentObject(auth)
                 .environmentObject(realtime)
-                .tint(FinTrackStyle.purple)
-                .preferredColorScheme(.light)
+                .environmentObject(pushService)
+                .tint(FinTrackStyle.black)
                 .task { await auth.restore() }
         }
     }
@@ -37,7 +37,9 @@ private struct FinTrackRootView: View {
     @State private var pendingShortcut: PendingShortcutDraft?
     @State private var linkMessage: String?
     @State private var showingAuth = false
+    @State private var showingLaunchIntro = true
     @State private var lastRegisteredDeviceToken: String?
+    @ScaledMetric(relativeTo: .largeTitle) private var welcomeTitleSize: CGFloat = 43
 
     init(pushService: PushNotificationService) {
         _pushService = ObservedObject(wrappedValue: pushService)
@@ -45,13 +47,22 @@ private struct FinTrackRootView: View {
 
     var body: some View {
         Group {
-            if isLocked {
+            if showingLaunchIntro {
+                launchIntroView
+            } else if isLocked {
                 lockView
             } else if !hasSeenWelcome {
                 welcomeView
             } else {
                 MainTabView()
             }
+        }
+        .preferredColorScheme(showingLaunchIntro || isLocked || !hasSeenWelcome ? .dark : .light)
+        .animation(.easeOut(duration: 0.25), value: showingLaunchIntro)
+        .task {
+            try? await Task.sleep(for: .milliseconds(1100))
+            showingLaunchIntro = false
+            if isLocked { await unlock() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background && deviceLockEnabled {
@@ -61,14 +72,13 @@ private struct FinTrackRootView: View {
                 }
                 isLocked = true
             }
-            if phase == .active && isLocked { Task { await unlock() } }
+            if phase == .active && isLocked && !showingLaunchIntro { Task { await unlock() } }
             if phase == .active {
                 Task { await scheduleLocalSummaryNotification() }
             }
         }
         .task {
-            _ = await pushService.requestPermissionAndRegister()
-            if deviceLockEnabled { isLocked = true; await unlock() }
+            await pushService.registerIfAuthorized()
             await scheduleLocalSummaryNotification()
             refreshWidget()
         }
@@ -122,7 +132,7 @@ private struct FinTrackRootView: View {
         .onChange(of: isLocked) { _, locked in
             if !locked { presentPendingShortcutIfReady() }
         }
-        .sheet(isPresented: $showingAuth) { AuthView() }
+        .sheet(isPresented: $showingAuth) { AuthView().preferredColorScheme(.light) }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(transaction: $0, isReviewDraft: true, reviewWarning: reviewWarning)
         }
@@ -134,45 +144,108 @@ private struct FinTrackRootView: View {
         }
     }
 
-    private var welcomeView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 62))
-                .foregroundStyle(FinTrackStyle.purple)
+    private var launchIntroView: some View {
+        VStack(spacing: 14) {
+            Rectangle()
+                .fill(.white)
+                .frame(width: 42, height: 3)
+                .padding(.bottom, 6)
             Text("FinTrack")
-                .font(.largeTitle.bold())
-                .foregroundStyle(FinTrackStyle.ink)
-            Text("Keep your spending, income and budgets together. Start on this device, even when you’re offline.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 32)
-            Spacer()
-            Button("Sign in to sync") {
-                showingAuth = true
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .padding(.horizontal, 24)
-            Button("Continue offline") {
-                hasSeenWelcome = true
-                presentPendingShortcutIfReady()
-            }
-            .padding(.bottom, 30)
+                .font(.system(size: 43, weight: .regular, design: .serif))
+                .foregroundStyle(.white)
+            Text("YOUR MONEY, IN FOCUS")
+                .font(.caption2.weight(.medium))
+                .tracking(2.1)
+                .foregroundStyle(.white.opacity(0.58))
         }
-        .background(FinTrackStyle.background)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(FinTrackStyle.black.ignoresSafeArea())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("FinTrack is opening")
+    }
+
+    private var welcomeView: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if let path = Bundle.main.path(forResource: "WelcomeArtwork", ofType: "png"),
+                       let artwork = UIImage(contentsOfFile: path) {
+                        Image(uiImage: artwork)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: max(290, geometry.size.height * 0.58))
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
+                    }
+
+                    Text("Money in focus.\nLife in motion.")
+                        .font(.system(size: welcomeTitleSize, weight: .regular, design: .serif))
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(.white)
+                        .padding(.top, 28)
+
+                    Text("A clearer view of your spending, income, and the places behind every transaction.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .padding(.top, 12)
+
+                    Spacer(minLength: 26)
+
+                    Button { showingAuth = true } label: {
+                        HStack {
+                            Text("Sign in to sync")
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .frame(height: 54)
+                        .overlay(Capsule().stroke(.white.opacity(0.35)))
+                    }
+
+                    Button("Continue offline") {
+                        hasSeenWelcome = true
+                        presentPendingShortcutIfReady()
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .padding(.top, 8)
+                }
+                .frame(minHeight: geometry.size.height, alignment: .top)
+                .frame(maxWidth: 560)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .background(.black)
     }
 
     private var lockView: some View {
-        VStack(spacing: 20) {
+        VStack(alignment: .leading, spacing: 20) {
+            Spacer()
             Image(systemName: "lock.shield")
-                .font(.system(size: 48))
-                .foregroundStyle(FinTrackStyle.purple)
-            Text("FinTrack is locked").font(.title2.bold())
-            if let lockError { Text(lockError).foregroundStyle(.secondary) }
-            Button("Unlock") { Task { await unlock() } }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, 40)
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(.white)
+                .frame(width: 76, height: 76)
+                .overlay(Circle().stroke(.white.opacity(0.35)))
+            Text("Your money,\njust for you.")
+                .font(.system(size: 42, design: .serif))
+                .foregroundStyle(.white)
+            Text(lockError ?? "Unlock FinTrack to see your private finance data.")
+                .foregroundStyle(.white.opacity(0.6))
+            Spacer()
+            Button("Unlock FinTrack") { Task { await unlock() } }
+                .buttonStyle(OutlineButtonStyle())
         }
+        .padding(28)
+        .frame(maxWidth: 560, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .background(FinTrackStyle.black)
     }
 
     private func unlock() async {
@@ -257,19 +330,84 @@ private struct FinTrackRootView: View {
     }
 }
 
+private enum MainTab: String, CaseIterable, Identifiable {
+    case overview = "Overview"
+    case transactions = "Activity"
+    case reports = "Reports"
+    case map = "Map"
+    case settings = "Settings"
+
+    var id: Self { self }
+
+    var icon: String {
+        switch self {
+        case .overview: "house.fill"
+        case .transactions: "list.bullet"
+        case .reports: "chart.bar.fill"
+        case .map: "map.fill"
+        case .settings: "gearshape.fill"
+        }
+    }
+}
+
 private struct MainTabView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var selected: MainTab = .overview
+
     var body: some View {
-        TabView {
-            NavigationStack { OverviewView() }
-                .tabItem { Label("Overview", systemImage: "square.grid.2x2") }
-            NavigationStack { TransactionsView() }
-                .tabItem { Label("Transactions", systemImage: "list.bullet.rectangle") }
-            NavigationStack { ReportsView() }
-                .tabItem { Label("Reports", systemImage: "chart.bar") }
-            NavigationStack { SpendingMapView() }
-                .tabItem { Label("Map", systemImage: "map") }
-            NavigationStack { SettingsView() }
-                .tabItem { Label("Settings", systemImage: "gearshape") }
+        Group {
+            if sizeClass == .regular {
+                NavigationSplitView {
+                    List {
+                        ForEach(MainTab.allCases) { tab in
+                            Button { selected = tab } label: {
+                                Label(tab.rawValue, systemImage: tab.icon)
+                                    .foregroundStyle(selected == tab ? FinTrackStyle.ink : FinTrackStyle.muted)
+                            }
+                            .listRowBackground(selected == tab ? FinTrackStyle.border : Color.clear)
+                        }
+                    }
+                    .navigationTitle("FinTrack")
+                    .finTrackGroupedScreen()
+                } detail: {
+                    selectedView
+                }
+            } else {
+                selectedView
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        HStack(spacing: 0) {
+                            ForEach(MainTab.allCases) { tab in
+                                Button { selected = tab } label: {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: tab.icon)
+                                            .font(.system(size: 17, weight: .semibold))
+                                        Text(tab.rawValue)
+                                            .font(.caption2.weight(.medium))
+                                    }
+                                    .foregroundStyle(selected == tab ? .white : .white.opacity(0.48))
+                                    .frame(maxWidth: .infinity, minHeight: 47)
+                                }
+                                .accessibilityAddTraits(selected == tab ? .isSelected : [])
+                            }
+                        }
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 7)
+                        .background(FinTrackStyle.black, in: Capsule())
+                        .padding(.horizontal, 38)
+                        .padding(.bottom, 5)
+                        .background(.clear)
+                    }
+            }
+        }
+    }
+
+    @ViewBuilder private var selectedView: some View {
+        switch selected {
+        case .overview: NavigationStack { OverviewView() }
+        case .transactions: NavigationStack { TransactionsView() }
+        case .reports: NavigationStack { ReportsView() }
+        case .map: NavigationStack { SpendingMapView() }
+        case .settings: NavigationStack { SettingsView() }
         }
     }
 }
