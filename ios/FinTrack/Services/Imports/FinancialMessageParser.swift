@@ -193,6 +193,12 @@ enum FinancialMessageParser {
     }
 
     private static func extractCounterparty(from text: String) -> String? {
+        if let merchant = firstCapture(
+            #"(?i)\b(?:via\s+POS\s+)?at\s+([A-Za-z][A-Za-z&' .-]{1,60}?)(?=\s+(?:LKR|Rs\.?)\s+[0-9]|\s+[0-9]{4,}\b|\s+[0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4}\b|\s+on\b|[.,;]|$)"#,
+            in: text
+        )?.trimmingCharacters(in: .whitespacesAndNewlines), !merchant.isEmpty {
+            return merchant
+        }
         for preposition in ["at", "from", "to", "by"] {
             let pattern = #"(?i)\b"# + preposition + #"\s+([A-Za-z][A-Za-z0-9&' -]{1,50}?)(?=\s+(?:on|ref|reference|avail(?:able)?|balance|via|using)\b|\s+(?:LKR|Rs\.?)\s+[0-9]|[.,;]|$)"#
             guard let capture = firstCapture(pattern, in: text)?.trimmingCharacters(in: .whitespacesAndNewlines),

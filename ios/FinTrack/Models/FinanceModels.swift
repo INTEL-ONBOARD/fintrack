@@ -33,7 +33,7 @@ enum TransactionSource: String, Codable {
     case manual, sms, receipt, siri, voice
 }
 
-struct FinanceTransaction: Identifiable, Equatable {
+struct FinanceTransaction: Identifiable, Equatable, Codable {
     var id: UUID
     var kind: TransactionKind
     var amountMinor: Int64

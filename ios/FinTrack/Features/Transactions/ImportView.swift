@@ -21,6 +21,8 @@ struct ImportView: View {
     @State private var isAnalyzingStatement = false
     @State private var isCommittingStatement = false
     @State private var showingStatementPicker = false
+    @State private var pendingMessages: [PendingShortcutDraft] = []
+    @State private var selectedPendingMessageID: UUID?
 
     var body: some View {
         ScrollView {
@@ -29,8 +31,36 @@ struct ImportView: View {
                 .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 18) {
-                Text("Review imported details before saving them to your ledger.")
+                Text("Clear financial alerts from Shortcuts save automatically. Messages needing confirmation appear here.")
                     .foregroundStyle(.secondary)
+
+                if !pendingMessages.isEmpty {
+                    FinanceCard {
+                        Text("Messages needing review").font(.headline)
+                        ForEach(pendingMessages, id: \.transaction.id) { pending in
+                            HStack {
+                                Button {
+                                    selectedPendingMessageID = pending.transaction.id
+                                    statusMessage = pending.reviewWarning
+                                    pendingReceiptImageData = nil
+                                    reviewDraft = pending.transaction
+                                } label: {
+                                    Text(pending.transaction.merchant.isEmpty ? "Financial message" : pending.transaction.merchant)
+                                    Spacer()
+                                    Text(Money.formatted(pending.transaction.amountMinor))
+                                }
+                                .buttonStyle(.plain)
+                                Button {
+                                    try? PendingMessageReviewInbox.shared.remove(id: pending.transaction.id)
+                                    refreshPendingMessages()
+                                } label: {
+                                    Image(systemName: "xmark.circle")
+                                }
+                                .accessibilityLabel("Discard pending message")
+                            }
+                        }
+                    }
+                }
 
                 FinanceCard {
                     Text("Financial message").font(.headline)
@@ -104,6 +134,14 @@ struct ImportView: View {
             guard let item else { return }
             Task { await scan(item) }
         }
+        .onAppear { refreshPendingMessages() }
+        .onChange(of: store.transactions) { _, transactions in
+            guard let id = selectedPendingMessageID,
+                  transactions.contains(where: { $0.id == id }) else { return }
+            try? PendingMessageReviewInbox.shared.remove(id: id)
+            refreshPendingMessages()
+            selectedPendingMessageID = nil
+        }
         .sheet(item: $reviewDraft) {
             TransactionEditorView(
                 transaction: $0, isReviewDraft: true, reviewWarning: statusMessage,
@@ -131,6 +169,22 @@ struct ImportView: View {
             case .failure(let error): statusMessage = error.localizedDescription
             }
         }
+    }
+
+    private func refreshPendingMessages() {
+        let inbox = PendingMessageReviewInbox.shared
+        for pending in inbox.all() {
+            let reference = pending.transaction.externalReference
+            if store.transactions.contains(where: { transaction in
+                if transaction.id == pending.transaction.id { return true }
+                guard let reference, transaction.source == .sms else { return false }
+                return transaction.externalReference == reference ||
+                    transaction.externalReference?.hasSuffix("|\(reference)") == true
+            }) {
+                try? inbox.remove(id: pending.transaction.id)
+            }
+        }
+        pendingMessages = inbox.all()
     }
 
     private func parseMessage() {

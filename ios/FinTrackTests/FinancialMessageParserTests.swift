@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import FinTrack
 
@@ -116,5 +117,80 @@ struct FinancialMessageParserTests {
         #expect(draft.kind == .expense)
         #expect(draft.amountMinorUnits == 185_000)
         #expect(draft.counterparty == nil)
+    }
+
+    @Test func sampathPosAlertFindsMerchantAndAmount() {
+        let result = FinancialMessageParser.parse(
+            "LKR 4,000.00 debited from AC **6494 via POS at BLUE WAY FILLING STATION 20500692 23/10/2026 20:03:22 To Inq Call 0112303050",
+            sender: "SAMPATHTXN"
+        )
+        guard case .ready(let draft) = result else {
+            Issue.record("Expected a ready debit, got \(result)")
+            return
+        }
+        #expect(draft.kind == .expense)
+        #expect(draft.amountMinorUnits == 400_000)
+        #expect(draft.counterparty == "BLUE WAY FILLING STATION")
+    }
+
+    @Test @MainActor func notificationImportSavesClearMessagesOnlyOnce() throws {
+        let store = FinanceStore(persistence: PersistenceController(inMemory: true))
+        let inbox = PendingMessageReviewInbox(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let debit = "LKR 4,000.00 debited from AC **6494 via POS at BLUE WAY FILLING STATION 20500692 23/10/2026 20:03:22"
+        guard case .saved(let expense) = try FinancialMessageImportHandler.process(
+            message: debit, sender: "SAMPATHTXN", store: store, reviewInbox: inbox
+        ) else {
+            Issue.record("Expected the debit to save automatically")
+            return
+        }
+        #expect(expense.kind == .expense)
+        #expect(expense.amountMinor == 400_000)
+        #expect(store.transactions.count == 1)
+        guard case .duplicate = try FinancialMessageImportHandler.process(
+            message: debit, sender: "SAMPATHTXN", store: store, reviewInbox: inbox
+        ) else {
+            Issue.record("Expected a duplicate result")
+            return
+        }
+        #expect(store.transactions.count == 1)
+
+        guard case .saved(let income) = try FinancialMessageImportHandler.process(
+            message: "LKR 5,000 credited to your account from ACME Ltd on 23/10/2026",
+            sender: "BANK", store: store, reviewInbox: inbox
+        ) else {
+            Issue.record("Expected the credit to save automatically")
+            return
+        }
+        #expect(income.kind == .income)
+        #expect(store.transactions.count == 2)
+    }
+
+    @Test @MainActor func ambiguousNotificationWaitsForReview() throws {
+        let store = FinanceStore(persistence: PersistenceController(inMemory: true))
+        let inboxFileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let inbox = PendingMessageReviewInbox(fileURL: inboxFileURL)
+        let message = "LKR 2,000 debited and credited at Keells"
+        guard case .queued = try FinancialMessageImportHandler.process(
+            message: message, sender: "BANK", store: store, reviewInbox: inbox
+        ) else {
+            Issue.record("Expected review instead of automatic saving")
+            return
+        }
+        #expect(store.transactions.isEmpty)
+        #expect(inbox.all().count == 1)
+        guard case .queued = try FinancialMessageImportHandler.process(
+            message: "I paid LKR 500 at Keells", sender: "FRIEND", store: store, reviewInbox: inbox
+        ) else {
+            Issue.record("Expected a personal message to need review")
+            return
+        }
+        #expect(inbox.all().count == 2)
+        #expect(PendingMessageReviewInbox(fileURL: inboxFileURL).all().count == 2)
+        guard case .ignored = try FinancialMessageImportHandler.process(
+            message: "Your OTP is 123456", sender: "BANK", store: store, reviewInbox: inbox
+        ) else {
+            Issue.record("Expected OTP to be ignored")
+            return
+        }
     }
 }
