@@ -16,7 +16,7 @@ struct AccountRecoveryView: View {
             Form {
                 Section {
                     BrandPageIntro(title: "Account help", subtitle: "Get back to your finance data.", icon: "key")
-                        .listRowInsets(EdgeInsets())
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
                 Picker("Action", selection: $mode) {
@@ -44,8 +44,9 @@ struct AccountRecoveryView: View {
                 if let message { Text(message).foregroundStyle(FinTrackStyle.green) }
             }
             .finTrackGroupedScreen()
-            .navigationTitle("Account help")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
             .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Close") { dismiss() } } }
             .alert("Account help", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
                 Button("OK", role: .cancel) {}

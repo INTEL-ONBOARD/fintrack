@@ -13,7 +13,7 @@ struct DataManagementView: View {
         Form {
                 Section {
                     BrandPageIntro(title: "Your data", subtitle: "Manage information on this device and in your account.", icon: "externaldrive")
-                        .listRowInsets(EdgeInsets())
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
             Section("Local data") {
@@ -32,8 +32,9 @@ struct DataManagementView: View {
             if let message { Text(message).foregroundStyle(FinTrackStyle.green) }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Data Management")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .confirmationDialog("Delete all cloud data?", isPresented: $showingRemoteConfirmation) {
             Button("Delete Cloud Data", role: .destructive) { Task { await deleteCloudData() } }
         } message: {

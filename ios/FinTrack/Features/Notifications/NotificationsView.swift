@@ -11,7 +11,7 @@ struct NotificationsView: View {
         List {
             Section {
                 BrandPageIntro(title: "Notifications", subtitle: "Updates that deserve your attention.", icon: "bell")
-                    .listRowInsets(EdgeInsets())
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
             }
 
@@ -59,7 +59,9 @@ struct NotificationsView: View {
             }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Notifications")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Mark all read") { Task { await store.markAllNotificationsRead(accessToken: auth.token()) } }

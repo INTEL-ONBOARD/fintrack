@@ -5,10 +5,25 @@ import SwiftUI
 struct SpendingMapView: View {
     @EnvironmentObject private var store: FinanceStore
     @State private var selectedFilter = "All"
+    @State private var selectedDateFilter: DateFilter = .all
+    @State private var customStart = Calendar.current.date(byAdding: .day, value: -29, to: Calendar.current.startOfDay(for: .now)) ?? .now
+    @State private var customEnd = Date.now
+    @State private var draftStart = Calendar.current.date(byAdding: .day, value: -29, to: Calendar.current.startOfDay(for: .now)) ?? .now
+    @State private var draftEnd = Date.now
+    @State private var showingCustomDates = false
     @State private var selectedTransaction: FinanceTransaction?
     @State private var position: MapCameraPosition = .automatic
 
     private let filters = ["All", "Expenses", "Income"]
+
+    private enum DateFilter: String, CaseIterable {
+        case all = "All dates"
+        case today = "Today"
+        case lastSevenDays = "Last 7 days"
+        case thisMonth = "This month"
+        case lastMonth = "Last month"
+        case custom = "Custom range"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,13 +35,51 @@ struct SpendingMapView: View {
                 ForEach(filters, id: \.self) { Text($0).tag($0) }
             }
             .pickerStyle(.segmented)
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            HStack {
+                Text("Date")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(FinTrackStyle.muted)
+                Spacer()
+                Menu {
+                    ForEach(DateFilter.allCases, id: \.self) { filter in
+                        Button(filter.rawValue, systemImage: selectedDateFilter == filter ? "checkmark" : "calendar") {
+                            if filter == .custom {
+                                draftStart = customStart
+                                draftEnd = customEnd
+                                showingCustomDates = true
+                            } else {
+                                selectedDateFilter = filter
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(dateFilterTitle)
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(FinTrackStyle.ink)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(FinTrackStyle.soft, in: Capsule())
+                }
+                .accessibilityLabel("Date filter, \(dateFilterTitle)")
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
 
             if locatedTransactions.isEmpty {
                 ContentUnavailableView(
-                    "No transactions with locations",
+                    hasLocatedTransactions ? "No places for these filters" : "No transactions with locations",
                     systemImage: "map",
-                    description: Text("Add a location while creating an expense or income.")
+                    description: Text(hasLocatedTransactions
+                        ? "Try another date or transaction type."
+                        : "Add a location while creating an expense or income.")
                 )
             } else {
                 Map(position: $position) {
@@ -50,15 +103,80 @@ struct SpendingMapView: View {
             }
         }
         .background(FinTrackStyle.background)
-        .navigationTitle("Spending Map")
+        .navigationTitle("")
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $selectedTransaction) {
             TransactionDetailView(transaction: $0, categoryName: categoryName(for: $0))
+        }
+        .sheet(isPresented: $showingCustomDates) {
+            NavigationStack {
+                Form {
+                    DatePicker("From", selection: $draftStart, in: ...draftEnd, displayedComponents: .date)
+                    DatePicker("To", selection: $draftEnd, in: draftStart..., displayedComponents: .date)
+                }
+                .navigationTitle("Choose dates")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { showingCustomDates = false }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") {
+                            customStart = draftStart
+                            customEnd = draftEnd
+                            selectedDateFilter = .custom
+                            position = .automatic
+                            showingCustomDates = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
+        .onChange(of: selectedFilter) { _, _ in position = .automatic }
+        .onChange(of: selectedDateFilter) { _, _ in position = .automatic }
+    }
+
+    private var hasLocatedTransactions: Bool {
+        store.transactions.contains { $0.latitude != nil && $0.longitude != nil }
+    }
+
+    private var dateFilterTitle: String {
+        if selectedDateFilter == .custom {
+            return "\(customStart.formatted(date: .abbreviated, time: .omitted)) – \(customEnd.formatted(date: .abbreviated, time: .omitted))"
+        }
+        return selectedDateFilter.rawValue
+    }
+
+    private var dateRange: Range<Date>? {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        switch selectedDateFilter {
+        case .all:
+            return nil
+        case .today:
+            return today..<(calendar.date(byAdding: .day, value: 1, to: today) ?? .distantFuture)
+        case .lastSevenDays:
+            return (calendar.date(byAdding: .day, value: -6, to: today) ?? today)..<(calendar.date(byAdding: .day, value: 1, to: today) ?? .distantFuture)
+        case .thisMonth:
+            guard let month = calendar.dateInterval(of: .month, for: today) else { return nil }
+            return month.start..<month.end
+        case .lastMonth:
+            guard let lastMonth = calendar.date(byAdding: .month, value: -1, to: today),
+                  let month = calendar.dateInterval(of: .month, for: lastMonth) else { return nil }
+            return month.start..<month.end
+        case .custom:
+            let start = calendar.startOfDay(for: customStart)
+            let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: customEnd)) ?? .distantFuture
+            return start..<end
         }
     }
 
     private var locatedTransactions: [FinanceTransaction] {
-        store.transactions.filter { transaction in
+        let selectedRange = dateRange
+        return store.transactions.filter { transaction in
             guard transaction.latitude != nil, transaction.longitude != nil else { return false }
+            if let selectedRange, !selectedRange.contains(transaction.occurredAt) { return false }
             switch selectedFilter {
             case "Expenses": return transaction.kind.isOutflow
             case "Income": return transaction.kind.isInflow || transaction.kind == .refund

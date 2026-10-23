@@ -11,7 +11,7 @@ struct SessionsView: View {
         List {
             Section {
                 BrandPageIntro(title: "Sessions", subtitle: "See where your account is signed in.", icon: "lock.shield")
-                    .listRowInsets(EdgeInsets())
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
             }
 
@@ -37,7 +37,9 @@ struct SessionsView: View {
             }
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Active Sessions")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .task { await load() }
         .refreshable { await load() }
         .confirmationDialog("Revoke this session?", isPresented: Binding(get: { revoking != nil }, set: { if !$0 { revoking = nil } })) {

@@ -20,7 +20,7 @@ struct ProfileSettingsView: View {
         Form {
                 Section {
                     BrandPageIntro(title: "Your profile", subtitle: "Keep your details and alerts up to date.", icon: "person.crop.circle")
-                        .listRowInsets(EdgeInsets())
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
             Section("Profile") {
@@ -54,8 +54,9 @@ struct ProfileSettingsView: View {
                 .listRowBackground(Color.clear)
         }
         .finTrackGroupedScreen()
-        .navigationTitle("Profile Settings")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar { ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } } }
         .onAppear { load() }
         .onChange(of: selectedAvatar) { _, item in

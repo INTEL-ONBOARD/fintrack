@@ -24,7 +24,9 @@ struct ImportView: View {
 
     var body: some View {
         ScrollView {
-                BrandPageIntro(title: "Import", subtitle: "Bring in messages, statements and receipts.", icon: "square.and.arrow.down")
+            BrandPageIntro(title: "Import", subtitle: "Bring in messages, statements and receipts.", icon: "square.and.arrow.down")
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 18) {
                 Text("Review imported details before saving them to your ledger.")
@@ -95,7 +97,9 @@ struct ImportView: View {
             .padding(16)
         }
         .background(FinTrackStyle.background)
-        .navigationTitle("Import")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
             Task { await scan(item) }
